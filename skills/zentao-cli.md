@@ -156,3 +156,12 @@ Requires `git`, `npm`, and `gh`.
 ```bash
 zentao release patch --dry-run
 ```
+
+Recommended publishing flow is via GitHub Actions npm Trusted Publisher (OIDC):
+
+1) bump `package.json` version
+2) create a matching tag `vX.Y.Z`
+3) push the tag to GitHub
+4) workflow `publish-npm.yml` publishes to npm
+
+If you use Actions publishing, prefer `zentao release patch --skip-publish` locally.

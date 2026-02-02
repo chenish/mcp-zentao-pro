@@ -133,10 +133,33 @@ Troubleshooting login:
 
 ## Release (maintainers)
 
+### GitHub Actions (recommended)
+
+This repo supports npm Trusted Publisher (OIDC) via GitHub Actions.
+
+1. Create a tag matching `package.json` version:
+
+```bash
+git tag v0.5.1
+git push origin v0.5.1
+```
+
+2. The workflow `.github/workflows/publish-npm.yml` will run tests and publish to npm.
+
+In npm Trusted Publisher settings, set the workflow filename to `publish-npm.yml`.
+
+### Local release (fallback)
+
 Requires `git`, `npm`, and `gh`.
 
 ```bash
 zentao release patch --dry-run
+```
+
+If you are using GitHub Actions publishing, prefer tagging + pushing, or run local release with:
+
+```bash
+zentao release patch --skip-publish
 ```
 
 ## Local Development
