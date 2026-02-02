@@ -18,10 +18,62 @@ function parseCsvIntegers(value) {
 }
 
 function printHelp() {
-  process.stdout.write(`zentao-mcp bugs <subcommand>\n\n`);
+  process.stdout.write(`zentao bugs <subcommand>\n\n`);
   process.stdout.write(`Usage:\n`);
-  process.stdout.write(`  zentao-mcp bugs list --product <id> [--page N] [--limit N]\n`);
-  process.stdout.write(`  zentao-mcp bugs mine [--scope assigned|opened|resolved|all] [--status active|resolved|closed|all] [--include-details]\n`);
+  process.stdout.write(`  zentao bugs list --product <id> [--page N] [--limit N] [--json]\n`);
+  process.stdout.write(`  zentao bugs mine [--scope assigned|opened|resolved|all] [--status active|resolved|closed|all] [--include-details] [--json]\n`);
+}
+
+function formatAccount(value) {
+  if (!value) return "";
+  if (typeof value === "string" || typeof value === "number") return String(value);
+  if (typeof value === "object") return String(value.account || value.name || value.realname || "");
+  return "";
+}
+
+export function formatBugsSimple(bugs) {
+  const rows = [];
+  rows.push(["id", "title", "status", "pri", "severity", "assignedTo"].join("\t"));
+  for (const bug of bugs) {
+    rows.push(
+      [
+        String(bug?.id ?? ""),
+        String(bug?.title ?? ""),
+        String(bug?.status ?? ""),
+        String(bug?.pri ?? ""),
+        String(bug?.severity ?? ""),
+        formatAccount(bug?.assignedTo),
+      ].join("\t")
+    );
+  }
+  return `${rows.join("\n")}\n`;
+}
+
+export function formatBugsMineSimple(result) {
+  const total = result?.total ?? 0;
+  const products = Array.isArray(result?.products) ? result.products : [];
+  const rows = [];
+  rows.push(`total\t${total}`);
+  rows.push(["id", "name", "myBugs", "totalBugs"].join("\t"));
+  for (const product of products) {
+    rows.push(
+      [
+        String(product?.id ?? ""),
+        String(product?.name ?? ""),
+        String(product?.myBugs ?? ""),
+        String(product?.totalBugs ?? ""),
+      ].join("\t")
+    );
+  }
+
+  const bugs = Array.isArray(result?.bugs) ? result.bugs : [];
+  if (bugs.length) {
+    rows.push("");
+    rows.push("bugs");
+    rows.push(formatBugsSimple(bugs).trimEnd());
+  }
+
+  return `${rows.join("\n")}\n`;
 }
 
 export async function runBugs({ argv = [], env = process.env } = {}) {
@@ -42,7 +94,19 @@ export async function runBugs({ argv = [], env = process.env } = {}) {
       page: cliArgs.page,
       limit: cliArgs.limit,
     });
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+
+    if (cliArgs.json) {
+      process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+      return;
+    }
+
+    const bugs = result?.result?.bugs;
+    if (!Array.isArray(bugs)) {
+      process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+      return;
+    }
+
+    process.stdout.write(formatBugsSimple(bugs));
     return;
   }
 
@@ -60,7 +124,13 @@ export async function runBugs({ argv = [], env = process.env } = {}) {
       maxItems: cliArgs["max-items"],
       includeDetails,
     });
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+
+    if (cliArgs.json) {
+      process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+      return;
+    }
+
+    process.stdout.write(formatBugsMineSimple(result?.result));
     return;
   }
 

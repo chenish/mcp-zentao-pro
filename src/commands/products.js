@@ -5,10 +5,10 @@ import { createClientFromCli } from "../zentao/client.js";
 function printHelp() {
   process.stdout.write(`zentao products list\n\n`);
   process.stdout.write(`Usage:\n`);
-  process.stdout.write(`  zentao products list [--page N] [--limit N] [--simple]\n`);
+  process.stdout.write(`  zentao products list [--page N] [--limit N] [--json]\n`);
   process.stdout.write(`\n`);
   process.stdout.write(`Options:\n`);
-  process.stdout.write(`  --simple             print key fields as TSV\n`);
+  process.stdout.write(`  --json               print full JSON payload\n`);
 }
 
 export function formatProductsSimple(products) {
@@ -43,15 +43,16 @@ export async function runProducts({ argv = [], env = process.env } = {}) {
     limit: cliArgs.limit,
   });
 
-  if (cliArgs.simple) {
-    const products = result?.result?.products;
-    if (!Array.isArray(products)) {
-      process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-      return;
-    }
-    process.stdout.write(formatProductsSimple(products));
+  if (cliArgs.json) {
+    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
     return;
   }
 
-  process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+  const products = result?.result?.products;
+  if (!Array.isArray(products)) {
+    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+    return;
+  }
+
+  process.stdout.write(formatProductsSimple(products));
 }
