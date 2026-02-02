@@ -37,3 +37,6 @@ coverage/
 # Misc
 *.pem
 .cache/
+
+# npm pack
+*.tgz
