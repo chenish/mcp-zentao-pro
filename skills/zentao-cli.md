@@ -1,6 +1,6 @@
-# zentao-mcp
+# zentao (ZenTao CLI)
 
-ZenTao CLI for products + bugs.
+This package provides a CLI for ZenTao REST API (products + bugs).
 
 ## Installation
 
@@ -18,29 +18,25 @@ npx -y @leeguoo/zentao-mcp --help
 
 This installs the `zentao` command (and keeps `zentao-mcp` as a compatibility alias).
 
-## Configuration
+## Authentication
 
-### Required Parameters
+You can pass credentials via environment variables:
 
-You can configure the CLI using CLI arguments or environment variables:
+```bash
+export ZENTAO_URL="https://zentao.example.com/zentao"
+export ZENTAO_ACCOUNT="leo"
+export ZENTAO_PASSWORD="***"
+```
 
-CLI arguments:
+Or via CLI flags:
 
-- `--zentao-url` (e.g. `https://zentao.example.com/zentao`)
+- `--zentao-url`
 - `--zentao-account`
 - `--zentao-password`
 
-Environment variables:
-
-- `ZENTAO_URL`
-- `ZENTAO_ACCOUNT`
-- `ZENTAO_PASSWORD`
-
-Tip: `ZENTAO_URL` should include the ZenTao base path (often `/zentao`).
-
 ## Commands
 
-List products:
+### List products
 
 ```bash
 zentao products list
@@ -52,7 +48,7 @@ Full JSON output:
 zentao products list --json
 ```
 
-List bugs for a product:
+### List bugs for a product
 
 ```bash
 zentao bugs list --product 1
@@ -64,7 +60,7 @@ Full JSON output:
 zentao bugs list --product 1 --json
 ```
 
-Get bug details:
+### Get bug details
 
 ```bash
 zentao bug get --id 123
@@ -76,7 +72,7 @@ Full JSON output:
 zentao bug get --id 123 --json
 ```
 
-List my bugs:
+### List my bugs
 
 ```bash
 zentao bugs mine --scope assigned --status active
@@ -88,15 +84,28 @@ Full JSON output:
 zentao bugs mine --scope assigned --status active --json
 ```
 
-Self test:
+Common options:
+
+- `--scope`: `assigned|opened|resolved|all`
+- `--status`: `active|resolved|closed|all` (supports `,` or `|` separated)
+- `--include-details`: include bug list in response
+- `--product-ids`: limit scan to specific products, e.g. `--product-ids=1,2,3`
+
+### Self test
 
 ```bash
 zentao self-test
 ```
 
-## Login
+Use `--expected N` to make it CI-friendly (exit code 2 when mismatch):
 
-Save credentials locally (stored as plaintext TOML under your user config directory):
+```bash
+zentao self-test --expected 0
+```
+
+## Login / Whoami
+
+Save credentials locally:
 
 ```bash
 zentao login --zentao-url=https://zentao.example.com/zentao --zentao-account=leo --zentao-password=***
@@ -106,28 +115,16 @@ Config file:
 
 - `~/.config/zentao/config.toml` (or `$XDG_CONFIG_HOME/zentao/config.toml`)
 
-Then commands can omit auth flags:
+Then:
 
 ```bash
 zentao whoami
-zentao products list
 ```
 
-## Release (maintainers)
+### Release (maintainers)
 
 Requires `git`, `npm`, and `gh`.
 
 ```bash
 zentao release patch --dry-run
 ```
-
-## Local Development
-
-```bash
-pnpm install
-pnpm test
-```
-
-## Security
-
-Do not commit credentials. Prefer environment variables in local runs.
