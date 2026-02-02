@@ -175,4 +175,4 @@ Do not commit credentials. Prefer environment variables in local runs.
 
 ## Skill
 
-See `skills/SKILL.md`.
+For OpenClaw (AgentSkills-compatible), see `skills/zentao/SKILL.md`.
