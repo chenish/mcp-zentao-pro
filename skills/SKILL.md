@@ -46,7 +46,7 @@ This writes:
 IMPORTANT: `zentaoUrl` should usually include `/zentao`.
 If login returns 404 HTML, your base path is likely missing `/zentao`.
 
-You can pass credentials via environment variables:
+You can also pass credentials via environment variables:
 
 ```bash
 export ZENTAO_URL="https://zentao.example.com/zentao"
@@ -70,8 +70,6 @@ zentao products list
 
 By default, this prints a simple TSV table (key fields). To get full JSON:
 
-Full JSON output:
-
 ```bash
 zentao products list --json
 ```
@@ -84,8 +82,6 @@ zentao bugs list --product 1
 
 By default, this prints a simple TSV table. To get full JSON:
 
-Full JSON output:
-
 ```bash
 zentao bugs list --product 1 --json
 ```
@@ -97,8 +93,6 @@ zentao bug get --id 123
 ```
 
 By default, this prints a simple TSV (single row). To get full JSON:
-
-Full JSON output:
 
 ```bash
 zentao bug get --id 123 --json
@@ -121,13 +115,6 @@ Full JSON output:
 ```bash
 zentao bugs mine --scope assigned --status active --json
 ```
-
-Common options:
-
-- `--scope`: `assigned|opened|resolved|all`
-- `--status`: `active|resolved|closed|all` (supports `,` or `|` separated)
-- `--include-details`: include bug list in response
-- `--product-ids`: limit scan to specific products, e.g. `--product-ids=1,2,3`
 
 ### Self test
 

@@ -172,3 +172,7 @@ pnpm test
 ## Security
 
 Do not commit credentials. Prefer environment variables in local runs.
+
+## Skill
+
+See `skills/SKILL.md`.
