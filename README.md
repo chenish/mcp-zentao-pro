@@ -4,10 +4,17 @@ ZenTao CLI for products + bugs.
 
 ## Installation
 
-Global install:
+Global install (recommended):
 
 ```bash
-npm i -g @leeguoo/zentao-mcp
+pnpm i -g @leeguoo/zentao-mcp
+```
+
+If you don't have pnpm:
+
+```bash
+npm i -g pnpm
+pnpm i -g @leeguoo/zentao-mcp
 ```
 
 Or use without installing:
@@ -37,6 +44,12 @@ Environment variables:
 - `ZENTAO_PASSWORD`
 
 Tip: `ZENTAO_URL` should include the ZenTao base path (often `/zentao`).
+
+Example:
+
+- `https://zentao.example.com/zentao` (common)
+
+If you see `404 Not Found` when logging in, your base path is likely missing `/zentao`.
 
 ## Commands
 
@@ -112,6 +125,11 @@ Then commands can omit auth flags:
 zentao whoami
 zentao products list
 ```
+
+Troubleshooting login:
+
+- If `Token response parse failed: <html>...404 Not Found...`, try:
+  - `https://your-host/zentao` instead of `https://your-host/`
 
 ## Release (maintainers)
 

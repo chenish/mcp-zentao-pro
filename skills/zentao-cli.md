@@ -2,12 +2,25 @@
 
 This package provides a CLI for ZenTao REST API (products + bugs).
 
+When instructing users, assume the primary workflow is:
+
+1) install with pnpm globally
+2) `zentao login` once
+3) run `zentao ...` commands without passing credentials each time
+
 ## Installation
 
-Global install:
+Global install (recommended):
 
 ```bash
-npm i -g @leeguoo/zentao-mcp
+pnpm i -g @leeguoo/zentao-mcp
+```
+
+If pnpm is not installed:
+
+```bash
+npm i -g pnpm
+pnpm i -g @leeguoo/zentao-mcp
 ```
 
 Or use without installing:
@@ -19,6 +32,19 @@ npx -y @leeguoo/zentao-mcp --help
 This installs the `zentao` command (and keeps `zentao-mcp` as a compatibility alias).
 
 ## Authentication
+
+Recommended: login once (stored locally):
+
+```bash
+zentao login --zentao-url=https://zentao.example.com/zentao --zentao-account=leo --zentao-password=***
+```
+
+This writes:
+
+- `~/.config/zentao/config.toml` (or `$XDG_CONFIG_HOME/zentao/config.toml`)
+
+IMPORTANT: `zentaoUrl` should usually include `/zentao`.
+If login returns 404 HTML, your base path is likely missing `/zentao`.
 
 You can pass credentials via environment variables:
 
@@ -42,6 +68,8 @@ Or via CLI flags:
 zentao products list
 ```
 
+By default, this prints a simple TSV table (key fields). To get full JSON:
+
 Full JSON output:
 
 ```bash
@@ -53,6 +81,8 @@ zentao products list --json
 ```bash
 zentao bugs list --product 1
 ```
+
+By default, this prints a simple TSV table. To get full JSON:
 
 Full JSON output:
 
@@ -66,6 +96,8 @@ zentao bugs list --product 1 --json
 zentao bug get --id 123
 ```
 
+By default, this prints a simple TSV (single row). To get full JSON:
+
 Full JSON output:
 
 ```bash
@@ -76,6 +108,12 @@ zentao bug get --id 123 --json
 
 ```bash
 zentao bugs mine --scope assigned --status active
+```
+
+By default, this prints a simple summary table. To include bug details:
+
+```bash
+zentao bugs mine --status active --include-details
 ```
 
 Full JSON output:
@@ -103,19 +141,9 @@ Use `--expected N` to make it CI-friendly (exit code 2 when mismatch):
 zentao self-test --expected 0
 ```
 
-## Login / Whoami
+## Whoami
 
-Save credentials locally:
-
-```bash
-zentao login --zentao-url=https://zentao.example.com/zentao --zentao-account=leo --zentao-password=***
-```
-
-Config file:
-
-- `~/.config/zentao/config.toml` (or `$XDG_CONFIG_HOME/zentao/config.toml`)
-
-Then:
+After login:
 
 ```bash
 zentao whoami
