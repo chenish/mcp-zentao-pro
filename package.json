@@ -1,6 +1,6 @@
 {
   "name": "@leeguoo/zentao-mcp",
-  "version": "0.5.2",
+  "version": "0.5.4",
   "description": "ZenTao CLI for products + bugs",
   "keywords": [
     "zentao",
@@ -27,6 +27,14 @@
   "publishConfig": {
     "access": "public"
   },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/leeguooooo/zentao-mcp"
+  },
+  "bugs": {
+    "url": "https://github.com/leeguooooo/zentao-mcp/issues"
+  },
+  "homepage": "https://github.com/leeguooooo/zentao-mcp#readme",
   "scripts": {
     "start": "node src/index.js",
     "self-test": "node src/index.js self-test",
