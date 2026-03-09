@@ -49,9 +49,19 @@ npm install -g @chenish/zentao-mcp-agent
 zentao-cli login --url <您的禅道地址> --account <账号> --pwd <密码>
 ```
 
-查看任务：
+查看我的仪表盘 (支持 tasks, bugs, stories)：
 ```bash
 zentao-cli my tasks
+```
+
+对话式任务派发 (建单)：
+```bash
+zentao-cli task create --execId <执行/迭代ID> --name "路由排查" --assign "lijian" --estimate 4 --deadline "2026-03-15"
+```
+
+一句话快捷报工：
+```bash
+zentao-cli task effort --taskId <任务ID> --consumed 2.5 --desc "完成了核心业务逻辑的编写"
 ```
 
 ## 支持的 MCP Tools
