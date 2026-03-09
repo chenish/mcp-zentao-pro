@@ -18,7 +18,7 @@
 ## ⚡ 二、 极速的任务流转与执行 (Action & Execution)
 
 - [x] **4. 对话式任务派发 (Chat-to-Task)**
-告别网页端繁琐的建单表单！只需一句自然语言（如：“把路由排查的活儿派给李建”），AI 将自动推断活跃迭代、补齐必填的预计开始/截止日期、注入默认预估工时，瞬间完成建单。
+告别网页端繁琐的建单表单！只需一句自然语言（如：“把路由排查的活儿派给张三”），AI 将自动推断活跃迭代、补齐必填的预计开始/截止日期、注入默认预估工时，瞬间完成建单。
 
 - [x] **5. 一句话快捷报工 (Seamless Effort Logging)**
 破解禅道复杂的工时登记（Estimate）路由与权限校验。支持在聊天框内直接发送自然语言报工（如：“给网关任务登记2小时”），底层引擎精准模拟真实表单写入，确保工时分毫不差。
@@ -56,7 +56,7 @@ zentao-cli my tasks
 
 对话式任务派发 (建单)：
 ```bash
-zentao-cli task create --execId <执行/迭代ID> --name "路由排查" --assign "lijian" --estimate 4 --deadline "2026-03-15"
+zentao-cli task create --execId <执行/迭代ID> --name "路由排查" --assign "zhangsan" --estimate 4 --deadline "2026-03-15"
 ```
 
 一句话快捷报工：
