@@ -1,7 +1,7 @@
 {
-  "name": "@leeguoo/zentao-mcp",
-  "version": "0.5.6",
-  "description": "ZenTao CLI for products + bugs",
+  "name": "@chenish/zentao-mcp-agent",
+  "version": "1.0.0",
+  "description": "A powerful ZenTao MCP server and CLI tool for OpenClaw, built with dual-token MVC/REST architecture.",
   "keywords": [
     "zentao",
     "chandao",
@@ -15,27 +15,27 @@
     "asia"
   ],
   "type": "module",
+  "main": "dist/index.js",
   "bin": {
-    "zentao": "src/index.js",
-    "zentao-mcp": "src/index.js"
+    "zentao-mcp-agent": "dist/index.js",
+    "zentao-cli": "dist/cli.js"
   },
   "files": [
-    "src",
-    "skills",
-    "README.md"
+    "dist"
   ],
   "publishConfig": {
     "access": "public"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/leeguooooo/zentao-mcp"
+    "url": "https://github.com/chenish/mcp-zentao-pro"
   },
   "bugs": {
-    "url": "https://github.com/leeguooooo/zentao-mcp/issues"
+    "url": "https://github.com/chenish/mcp-zentao-pro/issues"
   },
-  "homepage": "https://github.com/leeguooooo/zentao-mcp#readme",
+  "homepage": "https://github.com/chenish/mcp-zentao-pro#readme",
   "scripts": {
+    "build": "tsc",
     "start": "node src/index.js",
     "self-test": "node src/index.js self-test",
     "release": "node src/index.js release",
@@ -44,7 +44,16 @@
     "release:major": "node src/index.js release major",
     "test": "node --test"
   },
-  "dependencies": {},
+  "dependencies": {
+    "axios": "^1.6.8",
+    "commander": "^12.0.0",
+    "dotenv": "^16.4.5"
+  },
+  "devDependencies": {
+    "@types/node": "^20.12.11",
+    "typescript": "^5.4.5",
+    "tsx": "^4.10.0"
+  },
   "engines": {
     "node": ">=18"
   }
