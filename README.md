@@ -51,13 +51,17 @@
 
 ### 4. 极简状态流转 (State Machine Control)
 - **【功能清单】**：
-  - [ ] 1. 支持修改已有任务的状态。*(⚠️ 注：CLI 目前暂无 `update` 动作)*
-  - [ ] 2. 支持重新指派任务负责人（转交操作）。
-  - [ ] 3. 支持在流转时追加操作备注/评论。
+  - [ ] 0. 支持根据任务名称自动获取任务ID
+  
+  - [x] 1. 支持修改已有任务的状态。
+  - [x] 2. 支持重新指派任务负责人（转交操作）。
+  - [x] 3. 支持在流转时追加操作备注/评论。
 - **【CLI 调用示例】**：
-  - `zentao-cli task update --taskId 123 --status done` (🚧 尚在支持中：action "update" not supported)
-  - `zentao-cli task update --taskId 123 --assign zhangsan` (🚧 尚在支持中：action "update" not supported)
-  - `zentao-cli task update --taskId 123 --status done --assign zhangsan --comment "代码已提交，转交测试验证"` (🚧 尚在支持中：action "update" not supported)
+  - `zentao-cli task update --taskId 123 --status done` (单项流转：仅将任务状态标记为已完成)
+  - `zentao-cli task update --taskId 123 --assign zhangsan` (任务转交：仅将任务丢给张三处理)
+  - `zentao-cli task update --taskId 123 --status done --assign zhangsan --comment "代码已提交，转交测试验证"` (复合流转：完成、转交、加备注一气呵成)
+  - `zentao-cli task update --taskId 69705 --comment "我是Agent：单纯追加一条排查进展记录"` (轻量打卡：不修改状态与指派人，仅填报一条无耗时的进展留言)
+  - `zentao-cli task update --taskId 69705 --comment "问题已修复，耗时半天" --consumed 4` (精确进度：单独填报耗时并留下排查过程备注)
 - **【OpenClaw 使用场景】**：
   用户输入：*“那个排查任务做完了，帮我把状态改成已完成，转交给测试组的王五。”*
   Agent 调用 `updateTask` 工具，一键完成任务的闭环与流转动作。

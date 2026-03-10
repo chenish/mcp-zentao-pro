@@ -77,13 +77,13 @@ zentao-cli task create --execId 123 --name "网关熔断排查" --assign "zhangs
 zentao-cli task create --execId 123 --name "全量压测" --assign "lisi" --estimate 8 --deadline "2026-03-20"
 ```
 
-**🔥 单点状态机 (State Machine Control - 尚未实装)**
+**🔥 单点状态机 (State Machine Control)**
 ```bash
-# 状态扭转：仅将任务状态标记为已完成 (🚧 尚在支持中：action "update" not supported)
+# 状态扭转：仅将任务状态标记为已完成
 zentao-cli task update --taskId 123 --status done
-# 任务转交：仅将任务丢给张三处理 (🚧 尚在支持中：action "update" not supported)
+# 任务转交：仅将任务丢给张三处理
 zentao-cli task update --taskId 123 --assign zhangsan
-# 复合协同：完成、转交、加备注一气呵成 (🚧 尚在支持中：action "update" not supported)
+# 复合协同：完成、转交、加备注一气呵成
 zentao-cli task update --taskId 123 --status done --assign zhangsan --comment "代码已提交，转交测试验证"
 ```
 

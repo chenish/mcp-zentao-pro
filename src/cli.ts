@@ -35,15 +35,15 @@ program
     try {
       const client = new ZentaoClient(options.url);
       const token = await client.login(options.account, options.pwd);
-      
+
       const configDir = path.join(os.homedir(), '.config', 'zentao');
       // Robustness: ensure configuration directory exists recursively
       fs.mkdirSync(configDir, { recursive: true });
-      
+
       const envContent = `ZENTAO_URL=${options.url}\nZENTAO_TOKEN=${token}\n`;
       const configPath = path.join(configDir, '.env');
       fs.writeFileSync(configPath, envContent, 'utf-8');
-      
+
       console.log('✅ Login successful, config saved to:', configPath);
     } catch (error: any) {
       console.error('❌ Login failed:', error.message || error);
@@ -61,13 +61,13 @@ program
       console.error('❌ Please run "zentao login --url <url> --account <act> --pwd <pwd>" first.');
       process.exit(1);
     }
-    
+
     try {
       const client = new ZentaoClient(conf.url, conf.token);
       let dataType: 'task' | 'story' | 'bug' = 'task';
       if (type === 'stories' || type === 'story') dataType = 'story';
       else if (type === 'bugs' || type === 'bug') dataType = 'bug';
-      
+
       const items = await client.getMyDashboard(dataType);
       console.table(items);
     } catch (error: any) {
@@ -77,7 +77,7 @@ program
 
 program
   .command('task')
-  .argument('<action>', 'Action: create, effort')
+  .argument('<action>', 'Action: create, effort, update')
   .option('--execId <id>', 'Execution ID')
   .option('--name <name>', 'Task name')
   .option('--assign <account>', 'Assignee account')
@@ -86,6 +86,8 @@ program
   .option('--desc <text>', 'Effort description / comment')
   .option('--deadline <date>', 'Task deadline (YYYY-MM-DD)')
   .option('--estimate <h>', 'Estimated hours')
+  .option('--status <status>', 'New task status (e.g. done, closed)')
+  .option('--comment <text>', 'Comment for the update operation')
   .action(async (action, options) => {
     const conf = getConfig();
     if (!conf.url || !conf.token) {
@@ -125,7 +127,7 @@ program
 
         const res = await client.createTask(options.execId, payload);
         console.log('✅ Task created successfully. Raw response:', res);
-      } 
+      }
       else if (action === 'effort') {
         if (!options.taskId || !options.consumed || !options.desc) {
           console.error('❌ Missing required options for task effort: --taskId, --consumed, --desc');
@@ -142,8 +144,41 @@ program
         const res = await client.addEstimate(options.taskId, payload);
         console.log('✅ Effort logged successfully. Raw response:', res);
       }
+      else if (action === 'update') {
+        if (!options.taskId) {
+          console.error('❌ Missing required options for task update: --taskId');
+          return;
+        }
+
+        const payload: any = {};
+        if (options.assign) {
+          let assignedTo = options.assign;
+          try {
+            const mapping = await client.getUsersMapping();
+            if (mapping[options.assign]) {
+              assignedTo = mapping[options.assign];
+              console.log(`✅ Implicit mapping activated: Assigned "${options.assign}" -> "${assignedTo}"`);
+            }
+          } catch (e) {
+            console.warn('⚠️ Could not fetch user mappings. Treating assignee as raw account name.');
+          }
+          payload.assignedTo = assignedTo;
+        }
+        if (options.status) payload.status = options.status;
+        if (options.comment) payload.comment = options.comment;
+        if (options.consumed !== undefined) payload.consumed = options.consumed;
+        if (options.left !== undefined) payload.left = options.left;
+
+        if (Object.keys(payload).length === 0) {
+          console.error('❌ Nothing to update. Please provide --assign, --status, or --comment');
+          return;
+        }
+
+        const res = await client.updateTask(options.taskId, payload);
+        console.log('✅ Task updated successfully. Raw response:', res);
+      }
       else {
-        console.error('❌ Unknown action. Use "zentao task create" or "zentao task effort"');
+        console.error('❌ Unknown action. Use "zentao task create", "zentao task effort", or "zentao task update"');
       }
     } catch (error: any) {
       console.error('❌ Operation failed:', error.message || error);
