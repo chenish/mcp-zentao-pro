@@ -1,0 +1,583 @@
+{
+  "info": {
+    "_postman_id": "208178bb-b13b-46b3-8560-25045f8c54b5",
+    "name": "禅道 Agent 终极版 V4 (MVC读 + REST写)",
+    "description": "完美解决产品隔离、多人任务、分页截断问题。自带中文解析黑科技与必填项修复。",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "6758132"
+  },
+  "item": [
+    {
+      "name": "01. 鉴权与基建 (RESTful)",
+      "item": [
+        {
+          "name": "1. 获取 Token (双重注入)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if(jsonData.token) {",
+                  "    pm.environment.set(\"token\", jsonData.token);",
+                  "    // MVC 接口认 zentaosid",
+                  "    pm.environment.set(\"zentaosid\", jsonData.token);",
+                  "    console.log(\"✅ Token 鉴权成功\");",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"account\": \"{{account}}\",\n    \"password\": \"{{password}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api.php/v1/tokens",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api.php",
+                "v1",
+                "tokens"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "4. 获取项目下的执行/迭代 (自动获取执行ID)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if(jsonData.executions && jsonData.executions.length > 0) {",
+                  "    pm.environment.set(\"execution_id\", jsonData.executions[0].id);",
+                  "    console.log(\"已注入执行(迭代)ID: \" + jsonData.executions[0].id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Token",
+                "value": "{{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api.php/v1/projects/{{project_id}}/executions",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api.php",
+                "v1",
+                "projects",
+                "{{project_id}}",
+                "executions"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "3. 获取项目列表 (自动获取第一个项目ID)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if(jsonData.projects && jsonData.projects.length > 0) {",
+                  "    pm.environment.set(\"project_id\", jsonData.projects[0].id);",
+                  "    console.log(\"已注入项目ID: \" + jsonData.projects[0].id);",
+                  "}"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Token",
+                "value": "{{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api.php/v1/projects?limit=100",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api.php",
+                "v1",
+                "projects"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "100",
+                  "type": "text"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "2. 获取产品列表 (自动获取第一个产品ID)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if(jsonData.products && jsonData.products.length > 0) {",
+                  "    pm.environment.set(\"product_id\", jsonData.products[0].id);",
+                  "    console.log(\"已注入产品ID: \" + jsonData.products[0].id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Token",
+                "value": "{{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api.php/v1/products",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api.php",
+                "v1",
+                "products"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "获取任务详情 (Task)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Token",
+                "value": "{{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api.php/v1/tasks/{{task_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api.php",
+                "v1",
+                "tasks",
+                "{{task_id}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "获取需求详情 (Story)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Token",
+                "value": "{{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api.php/v1/stories/{{story_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api.php",
+                "v1",
+                "stories",
+                "{{story_id}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "通过中文名获取账号 (User Mapping)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "var targetRealName = pm.environment.get(\"real_name\"); // 从环境变量读取你想查的中文名",
+                  "",
+                  "if (jsonData.users && jsonData.users.length > 0) {",
+                  "    // 在返回的列表中寻找真实姓名匹配的员工",
+                  "    var matchedUser = jsonData.users.find(u => u.realname === targetRealName);",
+                  "    ",
+                  "    if (matchedUser) {",
+                  "        // 如果找到了，自动把他的 account 存入环境变量",
+                  "        pm.environment.set(\"target_account\", matchedUser.account);",
+                  "        console.log(\"✅ 映射成功！中文名 [\" + targetRealName + \"] 对应的账号是: \" + matchedUser.account);",
+                  "    } else {",
+                  "        console.log(\"❌ 未找到匹配的中文名，请检查是否输入正确或调整分页 limit。\");",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Token",
+                "value": "{{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api.php/v1/users?limit=500",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api.php",
+                "v1",
+                "users"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "500",
+                  "description": "拉取前100个用户进行本地匹配"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "2. 获取进行中的迭代 (为派发任务铺垫)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if(jsonData.executions && jsonData.executions.length > 0) {",
+                  "    pm.environment.set(\"execution_id\", jsonData.executions[0].id);",
+                  "    console.log(\"已注入最新迭代ID: \" + jsonData.executions[0].id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Token",
+                "value": "{{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api.php/v1/executions?status=doing&limit=10",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api.php",
+                "v1",
+                "executions"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "doing"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "02. 我的地盘 (MVC上帝视角 - 请点击 Visualize 标签看中文)",
+      "item": [
+        {
+          "name": "获取我的任务 (Tasks)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// 这里是处理中文转码和格式化的黑科技",
+                  "var rawJson = pm.response.json();",
+                  "if(rawJson.data) {",
+                  "    try {",
+                  "        var parsedData = JSON.parse(rawJson.data);",
+                  "        var template = `",
+                  "            <style>pre { background: #f4f4f4; padding: 15px; border-radius: 8px; font-family: Consolas, monospace; overflow-x: auto; }</style>",
+                  "            <h3>✅ MVC 数据已完美解析为中文：</h3>",
+                  "            <pre>{{response}}</pre>",
+                  "        `;",
+                  "        pm.visualizer.set(template, {",
+                  "            response: JSON.stringify(parsedData, null, 4)",
+                  "        });",
+                  "    } catch(e) { console.log(\"解析失败\", e); }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "zentaosid",
+                "value": "{{zentaosid}}",
+                "description": "MVC接口核心鉴权头"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/my-task-assignedTo-0-id_desc-0-100-1.json",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "my-task-assignedTo-0-id_desc-0-100-1.json"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "获取我的需求 (Stories)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var rawJson = pm.response.json();",
+                  "if(rawJson.data) {",
+                  "    try {",
+                  "        var parsedData = JSON.parse(rawJson.data);",
+                  "        pm.visualizer.set(`<pre>{{response}}</pre>`, {response: JSON.stringify(parsedData, null, 4)});",
+                  "    } catch(e) {} ",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "zentaosid",
+                "value": "{{zentaosid}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/my-story-assignedTo-0-id_desc-0-100-1.json",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "my-story-assignedTo-0-id_desc-0-100-1.json"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "获取我的缺陷 (Bugs)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var rawJson = pm.response.json();",
+                  "if(rawJson.data) {",
+                  "    try {",
+                  "        var parsedData = JSON.parse(rawJson.data);",
+                  "        pm.visualizer.set(`<pre>{{response}}</pre>`, {response: JSON.stringify(parsedData, null, 4)});",
+                  "    } catch(e) {} ",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "zentaosid",
+                "value": "{{zentaosid}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/my-bug-assignedTo-0-id_desc-0-100-1.json",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "my-bug-assignedTo-0-id_desc-0-100-1.json"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "03. 核心写入 (RESTful 规范派发)",
+      "item": [
+        {
+          "name": "派发任务 (已修复预计开始报错)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Token",
+                "value": "{{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"【Agent测试】路由拦截Bug排查\",\n    \"assignedTo\": \"{{target_account}}\",\n    \"type\": \"devel\",\n    \"estimate\": 4,\n    \"estStarted\": \"2026-03-09\",\n    \"deadline\": \"2026-03-15\",\n    \"desc\": \"由 OpenClaw 智能助手代发：请排查一下 Spring Cloud Gateway 的路由策略。\",\n    \"pri\": 2\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api.php/v1/executions/{{execution_id}}/tasks",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api.php",
+                "v1",
+                "executions",
+                "{{execution_id}}",
+                "tasks"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "登记工时 (Add Effort)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Token",
+                "value": "{{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"consumed\": 1,\n    \"left\": 0,\n    \"date\": \"2026-03-09 20:54:50\",\n    \"work\": \"报工说明：完成了逻辑梳理。\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api.php/v1/tasks/{{task_id}}/estimate",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api.php",
+                "v1",
+                "tasks",
+                "{{task_id}}",
+                "estimate"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "修改属性/指派/完成 (Update)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Token",
+                "value": "{{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"assignedTo\": \"taotao\",\n    \"status\": \"done\",\n    \"comment\": \"已排查完毕，转交验证。\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api.php/v1/tasks/{{task_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api.php",
+                "v1",
+                "tasks",
+                "{{task_id}}"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}
