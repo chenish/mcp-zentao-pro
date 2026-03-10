@@ -19,9 +19,9 @@ metadata: {"openclaw":{"emoji":"🚀","install":[{"id":"node","kind":"node","pac
 - **参数指南**：通过 `assignee` 参数传入真实的中文姓名（如 李建，本插件会自动映射为底层 account），通过 `status`（可选参数如 doing, wait, done）进行多维过滤。跨迭代返回 tasks / bugs / stories 数据。
 
 ### 2. 对话式任务派发 (Chat-to-Task)
-- **触发意图**：用户说**“把网关排查的活儿发给王大拿，给半天时间”**。
-- **调用动作**：调用 `createTask`。
-- **参数指南**：务必先明确当前的迭代/执行 `execId`。可以直接传入真实的中文 `name`、`assignee` 和工时 `estimate`（默认2小时）。底层已内置了自动修补禅道必填项和账号映射转换。
+- **触发意图**：用户说**“把网关排查的活儿发给王大拿，给半天时间”**，但未指明具体项目或迭代时。
+- **调用动作**：组合调用 `getProjects` -> `getActiveExecutions` -> (若无当期迭代则调用 `createExecution`) -> 最后发起 `createTask`。
+- **参数指南**：务必先明确当前的迭代/执行 `execId`。如不确定，先查询项目列表及其下挂载的近期执行。如有必要跨月，可智能创建一个当月的新冲刺。派单时，可以直接传入真实的中文 `name`、`assignee` 和工时 `estimate`（默认2小时）。底层已内置自动修补禅道必填项和账号映射转换。
 
 ### 3. 一句话快捷报工 (Seamless Effort Logging)
 - **触发意图**：用户说**“给 10452 任务登记 2 个小时的内容撰写工时”**。
@@ -74,10 +74,14 @@ zentao-cli my tasks --assign 李建
 zentao-cli my tasks --assign 李建 --status doing
 ```
 
-**🔥 对话派单化 (Chat-to-Task - 环境查询待开发)**
+**🔥 对话派单化与执行自治 (Projects & Chat-to-Task)**
 ```bash
-# 获取当前正在进行中的迭代 ID 列表 (摸底：获取活跃中的项目迭代)
-zentao-cli executions --status doing
+# 列出活跃中的项目总库 (新增能力)
+zentao-cli projects
+# 获取某项目下活跃的冲刺/迭代 ID 列表 (例如 577号项目)
+zentao-cli executions --project 577
+# 当期无迭代时：自动新建一个默认7天的本月新冲刺阶段
+zentao-cli execution create --projectId 577 --name "2026年3月常规迭代"
 # 瞬时派单：时间与工时全部由底层静默注入默认值
 zentao-cli task create --execId 123 --name "网关熔断排查" --assign "李建"
 # 精细派单：明确指定 8 小时预估工时和特定截止日期

@@ -52,6 +52,26 @@ program
   });
 
 program
+  .command('view')
+  .argument('<text>', 'Any string containing a zentao item URL')
+  .description('Smart resolve and fetch ZenTao entity from text')
+  .action(async (text) => {
+    const conf = getConfig();
+    if (!conf.url || !conf.token) {
+      console.error('❌ Please run "zentao login" first.');
+      process.exit(1);
+    }
+    try {
+      const client = new ZentaoClient(conf.url, conf.token);
+      const output = await client.resolveUrlAndFetch(text);
+      console.log('✅ Entity resolved successfully:');
+      console.table([output]);
+    } catch (error: any) {
+      console.error('❌ Resolve failed:', error.message || error);
+    }
+  });
+
+program
   .command('my')
   .argument('<type>', 'Type: tasks, stories, bugs')
   .option('--assign <account>', 'Filter by assignee (e.g. zhangsan)')
@@ -87,6 +107,24 @@ program
   });
 
 program
+  .command('projects')
+  .description('Get active projects')
+  .action(async () => {
+    const conf = getConfig();
+    if (!conf.url || !conf.token) {
+      console.error('❌ Please run "zentao login" first.');
+      process.exit(1);
+    }
+    try {
+      const client = new ZentaoClient(conf.url, conf.token);
+      let projects = await client.getProjects();
+      console.table(projects.map(p => ({ id: p.id, name: p.name, status: p.status, begin: p.begin, end: p.end })));
+    } catch (e: any) {
+      console.error('❌ Failed:', e.message || e);
+    }
+  });
+
+program
   .command('executions')
   .description('Get active executions/sprints')
   .option('--status <status>', 'Filter by status (e.g. doing)')
@@ -101,6 +139,50 @@ program
       let executions = await client.getActiveExecutions();
       if (options.status) executions = executions.filter(e => e.status === options.status);
       console.table(executions.map(e => ({ id: e.id, name: e.name, status: e.status, begin: e.begin, end: e.end, progress: e.progress })));
+    } catch (e: any) {
+      console.error('❌ Failed:', e.message || e);
+    }
+  });
+
+program
+  .command('execution')
+  .argument('<action>', 'Action: create')
+  .option('--projectId <id>', 'Parent Project ID')
+  .option('--name <name>', 'Execution name')
+  .option('--begin <date>', 'Begin date (YYYY-MM-DD)')
+  .option('--end <date>', 'End date (YYYY-MM-DD)')
+  .option('--days <days>', 'Available work days', '5')
+  .action(async (action, options) => {
+    const conf = getConfig();
+    if (!conf.url || !conf.token) {
+      console.error('❌ Please run "zentao login" first.');
+      process.exit(1);
+    }
+    try {
+      if (action === 'create') {
+        if (!options.projectId || !options.name) {
+          console.error('❌ Missing required options: --projectId, --name');
+          return;
+        }
+        const client = new ZentaoClient(conf.url, conf.token);
+
+        // Auto padding missing dates
+        const now = new Date();
+        const pad = (n: number) => n.toString().padStart(2, '0');
+        const defaultBegin = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+        // Next week
+        const end = new Date(now.getTime() + 86400000 * 7);
+        const defaultEnd = `${end.getFullYear()}-${pad(end.getMonth() + 1)}-${pad(end.getDate())}`;
+
+        const res = await client.createExecution(parseInt(options.projectId), {
+          name: options.name,
+          begin: options.begin || defaultBegin,
+          end: options.end || defaultEnd,
+          days: parseInt(options.days),
+          team: '' // Default empty
+        });
+        console.log('✅ Execution created successfully. Raw response:', res);
+      }
     } catch (e: any) {
       console.error('❌ Failed:', e.message || e);
     }
