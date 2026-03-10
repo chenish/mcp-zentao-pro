@@ -14,12 +14,12 @@ metadata: {"openclaw":{"emoji":"🚀","install":[{"id":"node","kind":"node","pac
 作为 AI Assistant，当用户提出下述意图时，请严格按照指引调用底层提供的 4 大 Tool 工具：
 
 ### 1. 全视界地盘拉取 (God-Mode Dashboard)
-- **触发意图**：用户询问**“看看李建手头有什么活”**、**“最近哪些线上 Bug 延期了”**。
+- **触发意图**：用户询问**“看看张三手头有什么活”**、**“最近哪些线上 Bug 延期了”**。
 - **调用动作**：调用 `getDashboard`。
-- **参数指南**：通过 `assignee` 参数传入真实的中文姓名（如 李建，本插件会自动映射为底层 account），通过 `status`（可选参数如 doing, wait, done）进行多维过滤。跨迭代返回 tasks / bugs / stories 数据。
+- **参数指南**：通过 `assignee` 参数传入真实的中文姓名（如 张三，本插件会自动映射为底层 account），通过 `status`（可选参数如 doing, wait, done）进行多维过滤。跨迭代返回 tasks / bugs / stories 数据。
 
 ### 2. 对话式任务派发 (Chat-to-Task)
-- **触发意图**：用户说**“把网关排查的活儿发给王大拿，给半天时间”**，但未指明具体项目或迭代时。
+- **触发意图**：用户说**“把网关排查的活儿发给李四，给半天时间”**，但未指明具体项目或迭代时。
 - **调用动作**：组合调用 `getProjects` -> `getActiveExecutions` -> (若无当期迭代则调用 `createExecution`) -> 最后发起 `createTask`。
 - **参数指南**：务必先明确当前的迭代/执行 `execId`。如不确定，先查询项目列表及其下挂载的近期执行。如有必要跨月，可智能创建一个当月的新冲刺。派单时，可以直接传入真实的中文 `name`、`assignee` 和工时 `estimate`（默认2小时）。底层已内置自动修补禅道必填项和账号映射转换。
 
@@ -29,7 +29,7 @@ metadata: {"openclaw":{"emoji":"🚀","install":[{"id":"node","kind":"node","pac
 - **参数指南**：必须带有精确的 `taskId`、耗时 `consumed` 以及备注 `work`。本接口底座已修复了禅道坑爹的报工幽灵丢失漏洞，直接确保工时准确入库！
 
 ### 4. 极简状态流转 (State Machine Control)
-- **触发意图**：用户说**“那个 Bug 修完了，状态转给测试组长李建”**。
+- **触发意图**：用户说**“那个 Bug 修完了，状态转给测试组长张三”**。
 - **调用动作**：调用 `updateTask` 工具组合。
 
 ### 5. 智能链接提取 (Smart Link Resolver)
@@ -68,10 +68,10 @@ zentao-cli my tasks
 zentao-cli my bugs
 # 分类：拉取指派给我的需求清单 (聚合：一键获取我名下的业务需求)
 zentao-cli my stories
-# 上帝视角：跨权限查看李建地盘上的所有任务 (查岗：跨项目查阅李建的任务列表)
-zentao-cli my tasks --assign 李建
-# 精准过滤：查看李建目前正在进行中的任务 (过滤：精确提取李建进行中的代办)
-zentao-cli my tasks --assign 李建 --status doing
+# 上帝视角：跨权限查看张三地盘上的所有任务 (查岗：跨项目查阅张三的任务列表)
+zentao-cli my tasks --assign 张三
+# 精准过滤：查看张三目前正在进行中的任务 (过滤：精确提取张三进行中的代办)
+zentao-cli my tasks --assign 张三 --status doing
 ```
 
 **🔥 对话派单化与执行自治 (Projects & Chat-to-Task)**
@@ -83,19 +83,19 @@ zentao-cli executions --project 577
 # 当期无迭代时：自动新建一个默认7天的本月新冲刺阶段
 zentao-cli execution create --projectId 577 --name "2026年3月常规迭代"
 # 瞬时派单：时间与工时全部由底层静默注入默认值
-zentao-cli task create --execId 123 --name "网关熔断排查" --assign "李建"
+zentao-cli task create --execId 123 --name "网关熔断排查" --assign "张三"
 # 精细派单：明确指定 8 小时预估工时和特定截止日期
-zentao-cli task create --execId 123 --name "全量压测" --assign "王大拿" --estimate 8 --deadline "2026-03-20"
+zentao-cli task create --execId 123 --name "全量压测" --assign "李四" --estimate 8 --deadline "2026-03-20"
 ```
 
 **🔥 单点状态机 (State Machine Control)**
 ```bash
 # 状态扭转：仅将任务状态标记为已完成
 zentao-cli task update --taskId 123 --status done
-# 任务转交：仅将任务丢给李建处理
-zentao-cli task update --taskId 123 --assign 李建
+# 任务转交：仅将任务丢给张三处理
+zentao-cli task update --taskId 123 --assign 张三
 # 复合协同：完成、转交、加备注一气呵成
-zentao-cli task update --taskId 123 --status done --assign 李建 --comment "代码已提交，转交测试验证"
+zentao-cli task update --taskId 123 --status done --assign 张三 --comment "代码已提交，转交测试验证"
 ```
 
 **⚠️ 一句话报工作业 (Log Effort - 测试解决中)**

@@ -54,12 +54,41 @@ export class ZentaoClient {
     return mapping;
   }
 
-  async getActiveExecutions(): Promise<any[]> {
-    const res = await this.rest.get('/api.php/v1/executions?status=doing&limit=10');
+  async getProjects(): Promise<any[]> {
+    const res = await this.rest.get('/api.php/v1/projects?status=doing&limit=50');
+    if (res.data && Array.isArray(res.data.projects)) {
+      return res.data.projects;
+    }
+    return [];
+  }
+
+  async getActiveExecutions(projectId?: number): Promise<any[]> {
+    let url = '/api.php/v1/executions?status=doing&limit=50';
+    if (projectId) {
+      url += `&project=${projectId}`;
+    }
+    const res = await this.rest.get(url);
     if (res.data && Array.isArray(res.data.executions)) {
       return res.data.executions;
     }
     return [];
+  }
+
+  async createExecution(projectId: number, payload: {
+    name: string;
+    begin: string;
+    end: string;
+    days: number;
+    team: string; // 成员拷贝
+  }): Promise<any> {
+    const defaultPayload = {
+      project: projectId,
+      type: 'sprint',
+      lifetime: 'short',
+      ...payload
+    };
+    const res = await this.rest.post('/api.php/v1/executions', defaultPayload);
+    return res.data;
   }
 
   async getMyDashboard(type: 'task' | 'story' | 'bug', assignee?: string, status?: string): Promise<any[]> {
@@ -216,6 +245,47 @@ export class ZentaoClient {
     }
 
     return lastRes;
+  }
+  async resolveUrlAndFetch(text: string): Promise<any> {
+    if (!text) throw new Error('Input text is empty');
+
+    // Regex to match typical zentao MVC urls or paths: task-view-69608.html, bug-view-12.html, story-view-55.html
+    const pattern = /(task|bug|story)-view-(\d+)/;
+    const match = text.match(pattern);
+
+    if (!match) {
+      throw new Error('No valid ZendTao item link found in the provided text.');
+    }
+
+    const type = match[1]; // task, bug, or story
+    const id = match[2];
+
+    const apiUrl = `/api.php/v1/${type === 'story' ? 'stories' : type + 's'}/${id}`;
+
+    try {
+      const res = await this.rest.get(apiUrl);
+      if (!res.data) throw new Error(`Failed to fetch ${type} #${id}`);
+
+      const item = res.data;
+
+      // Pluck essential fields for Context Window economy
+      return {
+        id: item.id,
+        type: type,
+        name: item.name || item.title,
+        status: item.status,
+        pri: item.pri,
+        assignedTo: item.assignedTo,
+        openedBy: item.openedBy,
+        estimate: item.estimate,
+        consumed: item.consumed,
+        deadline: item.deadline,
+        desc: item.desc ? item.desc.substring(0, 300) + '...' : ''
+      };
+
+    } catch (e: any) {
+      throw new Error(`Error resolving ${type} #${id}: ` + (e.response?.data?.error || e.message));
+    }
   }
 
   private getCurrentDateString(): string {
