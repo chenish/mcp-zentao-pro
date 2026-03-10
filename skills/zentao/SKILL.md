@@ -33,7 +33,7 @@ metadata: {"openclaw":{"emoji":"🚀","install":[{"id":"node","kind":"node","pac
 - **调用动作**：调用 `updateTask` 工具组合。
 
 ### 5. 智能链接提取 (Smart Link Resolver)
-- **触发意图**：用户在群聊或对话中甩出一条任意掺杂着链接的文本（如 **“帮我看看这个任务什么情况：http://192.168.2.49/task-view-123.html”**）。
+- **触发意图**：用户在群聊或对话中甩出一条任意掺杂着链接的文本（如 **“帮我看看这个任务什么情况：http://zentao.yourcompany.com/task-view-123.html”**）。
 - **调用动作**：提取包含网址在内的整段内容传给底层解析封装（当前 CLI 提供 `view <text>` 入口，如 OpenClaw 有挂起 API 请直接映射调用该解析服务）。你可以依此瞬间掌握该链接指向的任务/缺陷/需求等一切核心骨干状态。
 
 ---
