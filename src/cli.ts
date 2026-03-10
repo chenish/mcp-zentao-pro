@@ -54,8 +54,10 @@ program
 program
   .command('my')
   .argument('<type>', 'Type: tasks, stories, bugs')
+  .option('--assign <account>', 'Filter by assignee (e.g. zhangsan)')
+  .option('--status <status>', 'Filter by status (e.g. doing, wait)')
   .description('Get my dashboard items')
-  .action(async (type) => {
+  .action(async (type, options) => {
     const conf = getConfig();
     if (!conf.url || !conf.token) {
       console.error('❌ Please run "zentao login --url <url> --account <act> --pwd <pwd>" first.');
@@ -68,10 +70,39 @@ program
       if (type === 'stories' || type === 'story') dataType = 'story';
       else if (type === 'bugs' || type === 'bug') dataType = 'bug';
 
-      const items = await client.getMyDashboard(dataType);
+      // mapping user alias
+      let assignee = options.assign;
+      if (assignee) {
+        try {
+          const mapping = await client.getUsersMapping();
+          if (mapping[assignee]) assignee = mapping[assignee];
+        } catch { } // ignore
+      }
+
+      const items = await client.getMyDashboard(dataType, assignee, options.status);
       console.table(items);
     } catch (error: any) {
       console.error('❌ Failed to fetch dashboard:', error.message || error);
+    }
+  });
+
+program
+  .command('executions')
+  .description('Get active executions/sprints')
+  .option('--status <status>', 'Filter by status (e.g. doing)')
+  .action(async (options) => {
+    const conf = getConfig();
+    if (!conf.url || !conf.token) {
+      console.error('❌ Please run "zentao login" first.');
+      process.exit(1);
+    }
+    try {
+      const client = new ZentaoClient(conf.url, conf.token);
+      let executions = await client.getActiveExecutions();
+      if (options.status) executions = executions.filter(e => e.status === options.status);
+      console.table(executions.map(e => ({ id: e.id, name: e.name, status: e.status, begin: e.begin, end: e.end, progress: e.progress })));
+    } catch (e: any) {
+      console.error('❌ Failed:', e.message || e);
     }
   });
 
@@ -99,8 +130,8 @@ program
 
     try {
       if (action === 'create') {
-        if (!options.execId || !options.name || !options.assign || !options.deadline || !options.estimate) {
-          console.error('❌ Missing required options for task create: --execId, --name, --assign, --deadline, --estimate');
+        if (!options.execId || !options.name || !options.assign) {
+          console.error('❌ Missing required options for task create: --execId, --name, --assign');
           return;
         }
 
@@ -116,12 +147,13 @@ program
           console.warn('⚠️ Could not fetch user mappings. Treating assignee as raw account name.');
         }
 
+        const defaultDeadline = new Date(Date.now() + 86400000 * 3).toISOString().split('T')[0];
         const payload = {
           name: options.name,
           assignedTo: assignedTo,
           type: 'devel',
-          deadline: options.deadline,
-          estimate: parseFloat(options.estimate),
+          deadline: options.deadline || defaultDeadline,
+          estimate: options.estimate ? parseFloat(options.estimate) : 2,
           // estStarted will be automatically populated inside client.createTask
         };
 
@@ -129,8 +161,8 @@ program
         console.log('✅ Task created successfully. Raw response:', res);
       }
       else if (action === 'effort') {
-        if (!options.taskId || !options.consumed || !options.desc) {
-          console.error('❌ Missing required options for task effort: --taskId, --consumed, --desc');
+        if (!options.taskId || !options.consumed) {
+          console.error('❌ Missing required options for task effort: --taskId, --consumed');
           return;
         }
 

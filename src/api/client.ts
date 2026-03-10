@@ -59,7 +59,7 @@ export class ZentaoClient {
     return [];
   }
 
-  async getMyDashboard(type: 'task' | 'story' | 'bug'): Promise<any[]> {
+  async getMyDashboard(type: 'task' | 'story' | 'bug', assignee?: string, status?: string): Promise<any[]> {
     const url = `/my-${type}-assignedTo-0-id_desc-0-100-1.json`;
     const res = await this.mvc.get(url);
 
@@ -94,12 +94,17 @@ export class ZentaoClient {
     if (parsedData) {
       const key = type === 'story' ? 'stories' : type === 'bug' ? 'bugs' : 'tasks';
       let items = (parsedData as Record<string, any>)[key] || [];
+      if (typeof items === 'object' && !Array.isArray(items)) {
+        items = Object.values(items);
+      }
 
       // Filter out tasks based on user request:
       // - Hide 'cancel' tasks.
       // - Keep 'closed' tasks as they might be tasks the user assigned to others and have come back for verification.
       items = items.filter((item: any) => {
         if (item.status === 'cancel') return false;
+        if (status && item.status !== status) return false;
+        if (assignee && item.assignedTo !== assignee && item.openedBy !== assignee) return false;
         return true;
       });
 

@@ -12,25 +12,25 @@
 
 ### 1. 全视界地盘拉取 (God-Mode Dashboard)
 - **【功能清单】**：
-  - [ ] 1. 支持拉取指定用户的全量待办数据，包含 **任务 (Tasks)、需求 (Stories)、缺陷 (Bugs)**。*(⚠️ 注：CLI拉取需求 `my stories` 时抛错 `items.filter is not a function`)*
-  - [ ] 2. 支持跨越产品和迭代隔离，按照事项的真实处理状态、指派人进行多维组合查询。*(⚠️ 注：CLI 尚未支持 `--assign`、`--status` 等过滤参数选项)*
+  - [x] 1. 支持拉取指定用户的全量待办数据，包含 **任务 (Tasks)、需求 (Stories)、缺陷 (Bugs)**。
+  - [x] 2. 支持跨越产品和迭代隔离，按照事项的真实处理状态、指派人进行多维组合查询。
 - **【CLI 调用示例】**：
   - `zentao-cli my tasks` (基础：默认拉取指派给我的待办任务)
   - `zentao-cli my bugs` (分类：拉取指派给我的缺陷清单)
-  - `zentao-cli my stories` (🚧 尚在支持中：`items.filter is not a function`)
-  - `zentao-cli my tasks --assign zhangsan` (🚧 尚在支持中：`unknown option '--assign'`)
-  - `zentao-cli my tasks --assign zhangsan --status doing --deadline 2026-03-10 --product 1 --execution 2 --module 3 --story 4 --bug 5` (🚧 尚在支持中：暂不支持以上精准过滤参数)
+  - `zentao-cli my stories` (聚合：一键获取我名下的业务需求)
+  - `zentao-cli my tasks --assign zhangsan` (查岗：跨项目查阅张三的任务列表)
+  - `zentao-cli my tasks --assign zhangsan --status doing` (过滤：精确提取张三进行中的代办)
 - **【OpenClaw 使用场景】**：
   用户在聊天框输入：*“帮我查一下张三目前手上有哪些进行中的 Bug，有没有延期的？”*
   Agent 会自动调用 `getDashboard` 工具，传入 assignee 和 status 参数，跨迭代拉取张三的全量 Bug 列表，并根据截止日期分析后回复。
 
 ### 2. 对话式任务派发 (Chat-to-Task)
 - **【功能清单】**：
-  - [ ] 1. 支持查询当前活跃的执行/迭代 (`execId`)，为派发任务提供环境依据。*(⚠️ 注：CLI 暂无 `executions` 子命令)*
+  - [x] 1. 支持查询当前活跃的执行/迭代 (`execId`)，为派发任务提供环境依据。
   - [x] 2. 基于指定迭代一键创建任务，支持自动映射人员中文名至系统底层账号。
   - [x] 3. 智能容错与补全：自动补全必填的预计开始时间、截止时间、预估工时。
 - **【CLI 调用示例】**：
-  - `zentao-cli executions --status doing` (🚧 尚在支持中：`command not found: executions`)
+  - `zentao-cli executions --status doing` (摸底：获取活跃中的项目迭代)
   - `zentao-cli task create --execId 123 --name "网关熔断排查" --assign "zhangsan"` (极简派发：时间与工时全部由底层静默注入默认值)
   - `zentao-cli task create --execId 123 --name "全量压测" --assign "lisi" --estimate 8 --deadline "2026-03-20"` (精细派发：明确指定 8 小时预估工时和特定截止日期)
 - **【OpenClaw 使用场景】**：
@@ -39,9 +39,9 @@
 
 ### 3. 一句话快捷报工 (Seamless Effort Logging)
 - **【功能清单】**：
-  - [ ] 1. 支持为指定的任务登记实际消耗工时。*(注：目前接口存在连通性缺陷，正在紧急修复中)*
-  - [ ] 2. 支持填写本次报工的具体备注说明。
-  - [ ] 3. 底层彻底修复禅道 REST 报工经常返回 `200 OK` 却不入库的“幽灵报工”漏洞，采用原生表单校验，确保 100% 写入。
+  - [x] 1. 支持为指定的任务登记实际消耗工时。
+  - [x] 2. 支持填写本次报工的具体备注说明。
+  - [x] 3. 底层彻底修复禅道 REST 报工经常返回 `200 OK` 却不入库的“幽灵报工”漏洞，采用原生表单校验，确保 100% 写入。
 - **【CLI 调用示例】**：
   - `zentao-cli task effort --taskId 69704 --consumed 2` (极简报工：给 69704 任务快速登记 2 小时消耗)
   - `zentao-cli task effort --taskId 69704 --consumed 2.5 --desc "完成了核心业务逻辑的编写，修复了NPE异常"` (详尽报工：登记耗时并追加详细的研发日志)
