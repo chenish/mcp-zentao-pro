@@ -43,8 +43,11 @@ export class ZentaoClient {
     const mapping: Record<string, string> = {};
     if (res.data && Array.isArray(res.data.users)) {
       res.data.users.forEach((u: any) => {
-        if (u.realname && u.account) {
-          mapping[u.realname] = u.account;
+        if (u.account) {
+          mapping[u.account] = u.account;
+          if (u.realname) {
+            mapping[u.realname] = u.account;
+          }
         }
       });
     }
