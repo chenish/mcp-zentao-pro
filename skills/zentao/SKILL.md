@@ -1,19 +1,19 @@
 ---
 name: zentao
-description: 禅道(ZenTao) MCP大模型能力扩展包。提供跨项目的数据上帝视角、一句话生成任务、无缝报工(Log Effort)、自动状态流转等四组原生能力。
+description: 禅道(ZenTao) MCP大模型能力扩展包。提供跨项目的数据聚合视图、一句话生成任务、无缝报工(Log Effort)、自动状态流转等四组原生能力。
 metadata: {"openclaw":{"emoji":"🚀","install":[{"id":"node","kind":"node","package":"@chenish/zentao-mcp-agent","bins":["zentao-mcp","zentao-cli"],"label":"Install ZenTao AI Assistant"}]}}
 ---
 
 # ZenTao AI Assistant (zentao-mcp-agent)
 
 ## When to use this skill
-当你（大语言模型）需要代替用户在禅道中查阅待办、分配任务、填报工时或操作任务状态机时，请**必须**启用此扩展包提供的 Tool 集合。依托我们的 MVC+RESTful 混动底层架构，你可以突破产品权限藩篱，以“上帝视角”处理事务。
+当你（大语言模型）需要代替用户在禅道中查阅待办、分配任务、填报工时或操作任务状态机时，请**必须**启用此扩展包提供的 Tool 集合。依托我们的 MVC+RESTful 混动底层架构，你可以基于用户授权，越过繁杂的分页与项目界面，进行事项的统筹处理。
 
 ## 💡 AI 最佳实践指引 (For LLM AI)
 
 作为 AI Assistant，当用户提出下述意图时，请严格按照指引调用底层提供的 4 大 Tool 工具：
 
-### 1. 全视界地盘拉取 (God-Mode Dashboard)
+### 1. 全视界地盘拉取 (Global Dashboard)
 - **触发意图**：用户询问**“看看张三手头有什么活”**、**“最近哪些线上 Bug 延期了”**。
 - **调用动作**：调用 `getDashboard`。
 - **参数指南**：通过 `assignee` 参数传入真实的中文姓名（如 张三，本插件会自动映射为底层 account），通过 `status`（可选参数如 doing, wait, done）进行多维过滤。跨迭代返回 tasks / bugs / stories 数据。
@@ -34,24 +34,15 @@ metadata: {"openclaw":{"emoji":"🚀","install":[{"id":"node","kind":"node","pac
 
 ### 5. 智能链接提取 (Smart Link Resolver)
 - **触发意图**：用户在群聊或对话中甩出一条任意掺杂着链接的文本（如 **“帮我看看这个任务什么情况：http://zentao.yourcompany.com/task-view-123.html”**）。
-- **调用动作**：提取包含网址在内的整段内容传给底层解析封装（当前 CLI 提供 `view <text>` 入口，如 OpenClaw 有挂起 API 请直接映射调用该解析服务）。你可以依此瞬间掌握该链接指向的任务/缺陷/需求等一切核心骨干状态。
+- **调用动作**：提取包含网址在内的整段内容传给底层解析封装。你可以依此瞬间掌握该链接指向的任务/缺陷/需求等一切核心骨干状态。
 
 ---
-## 💻 人类开发者使用指南 (Installation & CLI)
+## 💻 安全与环境依赖说明 (Environment & Security)
 
-> **⚠️ 版本发布与更新策略声明：** 
-> 为了保持官方 ClawHub 插件市场 (NPM) 的纯净度和稳定性，在未来的迭代中：**局部的逻辑修补与优化将只进行 GitHub Commit**；只有当完成底层业务场景或 Tool 集出现较大拓展时，才会打包发布。日常需求请主要参考远端仓库。
+> **⚠️ 运行须知：** 
+> 这是一个受限的主流大模型端桥接应用。为保障您的操作合规，本扩展不会在未授权状态下进行任何风险调优或系统篡改。
 
-本插件为 ClawHub 分发而来。除了被自动注入上述的大模型 Tool 外，它还在本地环境提供了一套命令行工具以供真机测试：
-
-### 1. 安装与授权登录
-```bash
-npx skills add @chenish/zentao-mcp-agent
-
-# 若作为命令行独立使用：
-npm install -g @chenish/zentao-mcp-agent
-```
-**首次使用必须执行授权：**
+作为环境依赖底座，首次使用必须执行授权鉴权：
 ```bash
 zentao-cli login --url "https://xxxxx.com/zentao" --account "<账号>" --pwd "<密码>"
 ```
