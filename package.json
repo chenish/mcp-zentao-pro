@@ -1,8 +1,11 @@
 {
   "name": "@chenish/zentao-mcp-agent",
   "version": "1.0.1",
-  "description": "A powerful ZenTao MCP server and CLI tool for OpenClaw, built with dual-token MVC/REST architecture.",
+  "description": "Seamlessly integrate ZenTao with OpenClaw. A powerful MCP server and CLI tool providing intelligent ChatOps capabilities for ZenTao project management.",
   "keywords": [
+    "openclaw",
+    "mcp-server",
+    "agent-skill",
     "zentao",
     "chandao",
     "api",
