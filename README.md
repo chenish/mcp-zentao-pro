@@ -26,14 +26,15 @@
 
 ### 2. 对话式任务派发 (Chat-to-Task)
 - **【功能清单】**：
-  - [x] 1. 支持查询当前活跃的执行/迭代 (`execId`)，为派发任务提供环境依据。
+  - [x] 1. 支持查询活跃项目 (`getProjects`) 及迭代 (`execId`)，或者按需新建当月执行冲刺 (`createExecution`)。
   - [x] 2. 基于指定迭代一键创建任务，支持自动映射人员中文名至系统底层账号。
   - [x] 3. 智能容错与补全：自动补全必填的预计开始时间、截止时间、预估工时。
 - **【CLI 调用示例】**：
-  - `zentao-cli executions --status doing` (摸底：获取活跃中的项目迭代)
-  - `zentao-cli task create --execId 123 --name "网关熔断排查" --assign "zhangsan"` (极简派发：时间与工时全部由底层静默注入默认值)
-  - `zentao-cli task create --execId 123 --name "全量压测" --assign "lisi" --estimate 8 --deadline "2026-03-20"` (精细派发：明确指定 8 小时预估工时和特定截止日期)
-- **【OpenClaw 使用场景】**：
+  - `zentao-cli projects` (摸底：获取活跃中的项目库)
+  - `zentao-cli executions --project 577` (摸底：获取该项目下的执行迭代)
+  - `zentao-cli execution create --projectId 577 --name "2026年3月常规迭代"` (兜底：当月无迭代时，自动生成下周计划)
+  - `zentao-cli task create --execId 123 --name "网关熔断排查" --assign "张三"` (极简派发：时间与工时全部由底层静默注入默认值)
+  - `zentao-cli task create --execId 123 --name "全量压测" --assign "李四" --estimate 8 --deadline "2026-03-20"` (精细派发：明确指定 8 小时预估工时和特定截止日期)
   用户输入：*“把路由限流排查的活儿派给李四，给 4 个小时。”*
   Agent 调用 `createTask` 工具，提取意图转化为完整参数瞬间建单。
 
@@ -72,7 +73,7 @@
 
 > **💡 说明：** 本项目提供了第一层强大的查写 API 底座。以下高级场景，需要您在 OpenClaw 中配置具体的 **System Prompt (系统提示词)** 或结合本地 **Cron 定时脚本** 触发调用来实现。
 
-- [ ] **5. 智能链接解析**：在对话中丢出任意禅道链接，通过 OpenClaw 结合底层 API，瞬间抓取富文本详情。
+- [x] **5. 智能链接解析**：在对话中丢出任意文本包夹的禅道链接，调用正则截取后请求解析器瞬间抓取富文本抽象骨干 (`zentao-cli view "文本+URL"`)。
 - [ ] **6. 晨会/站会智能播报**：基于 Cron 定时触发，清晨调用地盘拉取接口，梳理“今日到期”与“已延期”事项，生成催办大纲发到工作群。
 - [ ] **7. 派发前负荷雷达**：在分配新需求前，要求大模型调用 Dashboard 测算目标员工并行的处理中任务数与剩余工时，避免单点过载。
 - [ ] **8. 僵尸任务巡检**：定时扫描 Dashboard，揪出长期处于进行中但连续数天无工时消耗的任务，提前暴露风险。
