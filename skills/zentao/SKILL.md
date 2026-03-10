@@ -16,7 +16,9 @@ metadata: {"openclaw":{"emoji":"🚀","install":[{"id":"node","kind":"node","pac
 ### 1. 全视界地盘拉取 (Global Dashboard)
 - **触发意图**：用户询问**“看看张三手头有什么活”**、**“最近哪些线上 Bug 延期了”**。
 - **调用动作**：调用 `getDashboard`。
-- **参数指南**：通过 `assignee` 参数传入真实的中文姓名（如 张三，本插件会自动映射为底层 account），通过 `status`（可选参数如 doing, wait, done）进行多维过滤。跨迭代返回 tasks / bugs / stories 数据。
+- **参数指南**：通过 `type`（task/bug/story）切换类型，通过 `status`（doing, wait, done）过滤状态。
+  - ✅ `my tasks / my bugs / my stories`：查询当前登录用户的待办，完全可用。
+  - ⚠️ `--assign <他人>` 跨人员查岗功能：**开发中，暂不稳定**，请勿主动引导用户使用。
 
 ### 2. 对话式任务派发 (Chat-to-Task)
 - **触发意图**：用户说**“把网关排查的活儿发给李四，给半天时间”**，但未指明具体项目或迭代时。
