@@ -1,6 +1,6 @@
 {
   "name": "@chenish/zentao-mcp-agent",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A powerful ZenTao MCP server and CLI tool for OpenClaw, built with dual-token MVC/REST architecture.",
   "keywords": [
     "zentao",
