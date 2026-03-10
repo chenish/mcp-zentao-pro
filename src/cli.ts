@@ -21,7 +21,9 @@ function getConfig() {
   }
   return {
     url: process.env.ZENTAO_URL || '',
-    token: process.env.ZENTAO_TOKEN || ''
+    token: process.env.ZENTAO_TOKEN || '',
+    account: process.env.ZENTAO_ACCOUNT ? Buffer.from(process.env.ZENTAO_ACCOUNT, 'base64').toString() : '',
+    password: process.env.ZENTAO_PASSWORD ? Buffer.from(process.env.ZENTAO_PASSWORD, 'base64').toString() : '',
   };
 }
 
@@ -40,7 +42,12 @@ program
       // Robustness: ensure configuration directory exists recursively
       fs.mkdirSync(configDir, { recursive: true });
 
-      const envContent = `ZENTAO_URL=${options.url}\nZENTAO_TOKEN=${token}\n`;
+      const envContent = [
+        `ZENTAO_URL=${options.url}`,
+        `ZENTAO_TOKEN=${token}`,
+        `ZENTAO_ACCOUNT=${Buffer.from(options.account).toString('base64')}`,
+        `ZENTAO_PASSWORD=${Buffer.from(options.pwd).toString('base64')}`,
+      ].join('\n') + '\n';
       const configPath = path.join(configDir, '.env');
       fs.writeFileSync(configPath, envContent, 'utf-8');
 
@@ -62,7 +69,9 @@ program
       process.exit(1);
     }
     try {
+      const conf = getConfig();
       const client = new ZentaoClient(conf.url, conf.token);
+      if (conf.account && conf.password) client.setCredentials(conf.account, conf.password);
       const output = await client.resolveUrlAndFetch(text);
       console.log('✅ Entity resolved successfully:');
       console.table([output]);
@@ -299,6 +308,128 @@ program
       if (error.response && error.response.data) {
         console.error('Server response:', JSON.stringify(error.response.data, null, 2));
       }
+    }
+  });
+
+
+/**
+ * ─────────────────────────────────────
+ * 高级度量工具 (Advanced Metric Tools)
+ * ─────────────────────────────────────
+ */
+
+// Helper 函数：解析逗号分隔的用户名列表并做账号映射
+async function resolveAssignees(client: ZentaoClient, raw: string): Promise<string[]> {
+  const names = raw.split(',').map(s => s.trim()).filter(Boolean);
+  try {
+    const mapping = await client.getUsersMapping();
+    return names.map(n => mapping[n] || n);
+  } catch {
+    return names;
+  }
+}
+
+// ─ load: 派发前负荷参考雷达 ─────────────────────
+program
+  .command('load')
+  .description('查看指定成员的当前并发任务数与剩余工时（仅供派单参考，不强制阻断）')
+  .requiredOption('--assign <names>', '成员账号或中文名，多人用逗号分隔（如 zhangsan,lisi 或 张三,李四）')
+  .action(async (options) => {
+    const conf = getConfig();
+    if (!conf.url || !conf.token) {
+      console.error('❌ Please run "zentao login" first.');
+      process.exit(1);
+    }
+    try {
+      const client = new ZentaoClient(conf.url, conf.token);
+      if (conf.account && conf.password) client.setCredentials(conf.account, conf.password);
+      const assignees = await resolveAssignees(client, options.assign);
+      const result = await client.getMemberLoad(assignees);
+      console.log('\n📊 派发前负荷参考雷达 (Workload Radar)\n');
+      for (const [person, data] of Object.entries(result) as [string, any][]) {
+        console.log(`👤 ${person}：并发任务 ${data.activeTaskCount} 件 | 剩余工时 ${data.totalLeftHours}h`);
+        if (data.items.length > 0) {
+          console.table(data.items);
+        }
+      }
+    } catch (e: any) {
+      console.error('❌ Failed:', e.message || e);
+    }
+  });
+
+// ─ stagnant: 停滞/静默单据排查 ─────────────────────
+program
+  .command('stagnant')
+  .description('排查指定成员名单中长期未更新（停滞）的进行中任务')
+  .requiredOption('--assign <names>', '成员账号或中文名，多人用逗号分隔')
+  .option('--days <n>', '停滞天数阈值（默认3天）', '3')
+  .action(async (options) => {
+    const conf = getConfig();
+    if (!conf.url || !conf.token) {
+      console.error('❌ Please run "zentao login" first.');
+      process.exit(1);
+    }
+    try {
+      const client = new ZentaoClient(conf.url, conf.token);
+      if (conf.account && conf.password) client.setCredentials(conf.account, conf.password);
+      const assignees = await resolveAssignees(client, options.assign);
+      const result = await client.getStagnantTasks(assignees, parseInt(options.days));
+      if (result.length === 0) {
+        console.log(`✅ 无停滞单据 (阈值 ${options.days} 天)`);
+      } else {
+        console.log(`\n⚠️  停滞单据排查报告 (超 ${options.days} 天未更新)\n`);
+        console.table(result.map(r => ({
+          指派人: r.assignee, ID: r.id, 名称: r.name,
+          状态: r.status, 优先级: r.pri,
+          最后更新: r.lastUpdated, 停滞天数: r.stagnantDays,
+        })));
+      }
+    } catch (e: any) {
+      console.error('❌ Failed:', e.message || e);
+    }
+  });
+
+// ─ morning-check: 晨会综合作战沙盘 ─────────────────────
+program
+  .command('morning-check')
+  .description('生成晨会作战沙盘：汇总已超期、今明到期、高优任务三类预警清单')
+  .requiredOption('--team <names>', '团队成员账号或中文名，多人用逗号分隔')
+  .action(async (options) => {
+    const conf = getConfig();
+    if (!conf.url || !conf.token) {
+      console.error('❌ Please run "zentao login" first.');
+      process.exit(1);
+    }
+    try {
+      const client = new ZentaoClient(conf.url, conf.token);
+      if (conf.account && conf.password) client.setCredentials(conf.account, conf.password);
+      const assignees = await resolveAssignees(client, options.team);
+      const result = await client.getMorningCheck(assignees);
+
+      console.log('\n🌅 晨会作战沙盘 (Morning Standup Radar)\n');
+
+      console.log(`🔴 已超期任务 (${result.overdue.length} 件):`);
+      if (result.overdue.length === 0) console.log('  无');
+      else console.table(result.overdue.map(r => ({
+        指派人: r.assignee, ID: r.id, 名称: r.name.substring(0, 20),
+        截止日期: r.deadline, 超期天数: r.overdueDays, 优先级: r.pri,
+      })));
+
+      console.log(`\n🟡 今明到期任务 (${result.dueSoon.length} 件):`);
+      if (result.dueSoon.length === 0) console.log('  无');
+      else console.table(result.dueSoon.map(r => ({
+        指派人: r.assignee, ID: r.id, 名称: r.name.substring(0, 20),
+        截止日期: r.deadline, 优先级: r.pri,
+      })));
+
+      console.log(`\n🟠 高优任务 (Pri ≤ 2, ${result.highPriority.length} 件):`);
+      if (result.highPriority.length === 0) console.log('  无');
+      else console.table(result.highPriority.map(r => ({
+        指派人: r.assignee, ID: r.id, 名称: r.name.substring(0, 20),
+        状态: r.status, 截止日期: r.deadline, 优先级: r.pri,
+      })));
+    } catch (e: any) {
+      console.error('❌ Failed:', e.message || e);
     }
   });
 
