@@ -15,13 +15,14 @@
     "asia"
   ],
   "type": "module",
-  "main": "dist/index.js",
+  "main": "src/index.js",
   "bin": {
-    "zentao-mcp-agent": "dist/index.js",
-    "zentao-cli": "dist/cli.js"
+    "zentao-cli": "dist/cli.js",
+    "zentao-mcp": "src/index.js"
   },
   "files": [
-    "dist"
+    "dist",
+    "src"
   ],
   "publishConfig": {
     "access": "public"

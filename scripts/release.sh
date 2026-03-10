@@ -167,7 +167,7 @@ main() {
   echo -e "${GREEN}=== 发布完成 ===${NC}"
   echo -e "${GREEN}版本: ${NEW_VERSION}${NC}"
   echo -e "${GREEN}GitHub: https://github.com/$(gh repo view --json owner,name -q '.owner.login + "/" + .name')/releases/tag/v${NEW_VERSION}${NC}"
-  echo -e "${GREEN}npm: https://www.npmjs.com/package/@leeguoo/zentao-mcp${NC}"
+  echo -e "${GREEN}npm: https://www.npmjs.com/package/@chenish/zentao-mcp-agent${NC}"
 }
 
 # 显示帮助信息

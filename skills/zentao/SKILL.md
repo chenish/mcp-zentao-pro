@@ -1,90 +1,71 @@
 ---
 name: zentao
-description: Use the zentao CLI to login and query ZenTao products and bugs. ZENTAO_URL usually includes /zentao.
-homepage: https://www.npmjs.com/package/@leeguoo/zentao-mcp
-metadata: {"openclaw":{"emoji":"🐞","install":[{"id":"node","kind":"node","package":"@leeguoo/zentao-mcp","bins":["zentao"],"label":"Install zentao CLI (node)"}]}}
+description: ZenTao MCP Server & CLI Tool. Provides ChatOps capabilities (God-Mode Dashboard, Task Creation, Effort Logging) directly into OpenClaw for efficient agile management.
+metadata: {"openclaw":{"emoji":"🚀","install":[{"id":"node","kind":"node","package":"@chenish/zentao-mcp-agent","bins":["zentao-mcp", "zentao-cli"],"label":"Install zentao-mcp-agent (node)"}]}}
 ---
 
-# zentao (ZenTao CLI)
+# zentao-mcp-agent (ZenTao MCP & CLI)
 
 ## When to use this skill
 
-Use this skill when the user asks to:
+Use this skill when the user asks to manage ZenTao (禅道) via OpenClaw / LLM Chat:
 
-- login to ZenTao via the CLI
-- list products
-- list bugs for a product
-- view bug details
-- list the user's own bugs
+- Fetch my/everyone's dashboard across projects (God-Mode)
+- Create new tasks with Natural Language parameters inference
+- Log effort (addEstimate) for tasks seamlessly
+- Query product and bug lists
+- Get detailed view of specific tasks, bugs or stories
 
-## Installation (recommended)
+## Installation
 
-To install globally with pnpm:
+This package operates as a powerful MCP Server. To install it into OpenClaw:
 
 ```bash
-pnpm i -g @leeguoo/zentao-mcp
+npx skills add @chenish/zentao-mcp-agent
 ```
 
-If pnpm is not installed:
+Alternatively, to use it as a global CLI tool:
 
 ```bash
-npm i -g pnpm
-pnpm i -g @leeguoo/zentao-mcp
+npm install -g @chenish/zentao-mcp-agent
 ```
 
 ## Login workflow
 
-1) Run login once:
+Before the MCP Server or CLI can communicate with ZenTao, you must authenticate once using the CLI:
 
 ```bash
-zentao login \
-  --zentao-url="https://zentao.example.com/zentao" \
-  --zentao-account="leo" \
-  --zentao-password="***"
+zentao-cli login \
+  --url="https://<your-zentao-domain>/zentao" \
+  --account="<your-account>" \
+  --pwd="<your-password>"
 ```
 
-2) This writes credentials to:
+*This will store your ZENTAO_URL and Access Token in `~/.config/zentao/.env`.*
 
-- `~/.config/zentao/config.toml` (or `$XDG_CONFIG_HOME/zentao/config.toml`)
+## Core MCP Tools usage
 
-3) Verify:
+Once installed in OpenClaw, the AI can invoke the following tools:
 
+- `getDashboard`: Fetch a summarized list of tasks, bugs, or stories (Bypasses project isolation using MVC engine).
+- `createTask`: Automatically infer requirements and dispatch new tasks (Auto-fills estStarted, estimate, deadline).
+- `addEstimate`: Directly log consumed hours for a specific task (Handles ZenTao's ghost-logging bugs).
+- `getUsersMapping`: Resolve assigning aliases.
+
+## Direct CLI Commands
+
+Fetch my tasks dashboard:
 ```bash
-zentao whoami
+zentao-cli my tasks
 ```
 
-IMPORTANT: `--zentao-url` usually must include `/zentao`.
-If login returns HTML 404, the base path is likely missing `/zentao`.
-
-## Commands
-
-List products (simple by default):
-
+Create a task explicitly:
 ```bash
-zentao products list
+zentao-cli task create --execId 123 --name "Demo Task" --assign "zhangsan" --estimate 4 --deadline "2026-03-15"
 ```
 
-List bugs for a product:
-
+Log effort globally:
 ```bash
-zentao bugs list --product 6
+zentao-cli task effort --taskId 456 --consumed 2.5 --desc "Completed code logic"
 ```
 
-Get bug details:
-
-```bash
-zentao bug get --id 1329
-```
-
-List my bugs (include details):
-
-```bash
-zentao bugs mine --status active --include-details
-```
-
-Full JSON output:
-
-- `zentao products list --json`
-- `zentao bugs list --product 6 --json`
-- `zentao bug get --id 1329 --json`
-- `zentao bugs mine --include-details --json`
