@@ -49,14 +49,58 @@ npm install -g @chenish/zentao-mcp-agent
 zentao-cli login --url "https://xxxxx.com/zentao" --account "<账号>" --pwd "<密码>"
 ```
 
-### 2. 命令行调用实例
+### 2. 命令行全量调用实例
+
+本插件已将极其复杂的禅道 API 与路由封装为极简的指令集，可用作日常 CLI：
+
+**🔥 地盘全视界 (My Dashboard - 部分功能开发中)**
 ```bash
-# 查看地盘：
+# 基础：默认拉取指派给我的待办任务
 zentao-cli my tasks
-# 强制分配任务：
-zentao-cli task create --execId 123 --name "压测报告编写" --assign "lisi"
-# 给指定任务提报3小时工时：
-zentao-cli task effort --taskId 666 --consumed 3 --desc "撰写完毕"
+# 分类：拉取指派给我的缺陷清单
+zentao-cli my bugs
+# 分类：拉取指派给我的需求清单 (🚧 尚在支持中：`items.filter is not a function`)
+zentao-cli my stories
+# 上帝视角：跨权限查看张三地盘上的所有任务 (🚧 尚在支持中：`unknown option '--assign'`)
+zentao-cli my tasks --assign zhangsan
+# 精准过滤：查看张三目前正在进行中的任务 (🚧 尚在支持中：不支持过滤参数)
+zentao-cli my tasks --assign zhangsan --status doing
 ```
+
+**🔥 对话派单化 (Chat-to-Task - 环境查询待开发)**
+```bash
+# 获取当前正在进行中的迭代 ID 列表 (🚧 尚在支持中：`command not found: executions`)
+zentao-cli executions --status doing
+# 瞬时派单：时间与工时全部由底层静默注入默认值
+zentao-cli task create --execId 123 --name "网关熔断排查" --assign "zhangsan"
+# 精细派单：明确指定 8 小时预估工时和特定截止日期
+zentao-cli task create --execId 123 --name "全量压测" --assign "lisi" --estimate 8 --deadline "2026-03-20"
+```
+
+**🔥 单点状态机 (State Machine Control - 尚未实装)**
+```bash
+# 状态扭转：仅将任务状态标记为已完成 (🚧 尚在支持中：action "update" not supported)
+zentao-cli task update --taskId 123 --status done
+# 任务转交：仅将任务丢给张三处理 (🚧 尚在支持中：action "update" not supported)
+zentao-cli task update --taskId 123 --assign zhangsan
+# 复合协同：完成、转交、加备注一气呵成 (🚧 尚在支持中：action "update" not supported)
+zentao-cli task update --taskId 123 --status done --assign zhangsan --comment "代码已提交，转交测试验证"
+```
+
+**⚠️ 一句话报工作业 (Log Effort - 测试解决中)**
+*(注：由于禅道底层隐秘的过滤规则，目前报工部分接口存在连通性缺陷，正在紧急修复连通中)*
+```bash
+# 极简报工：给 69704 任务快速登记 2 小时消耗
+zentao-cli task effort --taskId 69704 --consumed 2
+# 详尽报工：登记耗时并追加详细的研发日志
+zentao-cli task effort --taskId 69704 --consumed 2.5 --desc "完成了核心业务逻辑的编写"
+```
+
+---
+
+## 🤝 欢迎提出需求与共建
+
+如果你对本插件有任何新的期待，或者希望由社区帮你加入更多针对禅道系统的定制化、自动化功能接口，我们非常**愿意并且乐意为大家拓展功能**！
+欢迎随时前往 [GitHub Repository](https://github.com/chenish/mcp-zentao-pro/issues) 提交你的 Issue 需求或者 Bug 报错。
 
 
