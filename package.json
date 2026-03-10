@@ -39,7 +39,7 @@
   },
   "homepage": "https://github.com/chenish/mcp-zentao-pro#readme",
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && chmod +x dist/cli.js",
     "start": "node src/index.js",
     "self-test": "node src/index.js self-test",
     "release": "node src/index.js release",
