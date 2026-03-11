@@ -2,7 +2,7 @@
 
 🚀 **专为现代研发团队打造的 ChatOps 效能中枢**
 
-本项目不仅是一个简单的 API 封装，更是一个基于 `@modelcontextprotocol/sdk` 开发的标准 **MCP Server**。依托本项目独创的 **“MVC 上帝视角 + RESTful 精准写入”** 混动架构，完美穿透禅道底层的跨项目严苛隔离与分页限制，赋能大模型（如 OpenClaw）无缝实现极速研发管理。
+本项目不仅是一个简单的 API 封装，更是一个基于 `@modelcontextprotocol/sdk` 开发的标准 **MCP Server**。依托本项目独创的 **“MVC 视角 + RESTful 精准写入”** 混动架构，完美穿透禅道底层的跨项目严苛隔离与分页限制，赋能大模型（如 OpenClaw）无缝实现极速研发管理。
 
 ---
 
