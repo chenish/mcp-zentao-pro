@@ -134,7 +134,12 @@
 2. **双重鉴权架构守则 (极度重要！)**
    - **RESTful 接口** (`/api.php/v1/...`)：请求头必须携带 `Token: xxx`。
    - **MVC 接口** (`.json` 结尾)：请求头必须携带 `zentaosid: xxx`。
-
+3. **项目构建测试**
+   - `npm install`
+   - `npm run build`
+   - `node dist/cli.js login --url <您的禅道地址> --account <账号> --pwd <密码>`
+   - `node dist/cli.js my tasks` 等于 `zentao-cli my tasks` 
+   - 其他功能同上 
 ---
 
 ## ⚡ 快速开始 (Quick Start)
