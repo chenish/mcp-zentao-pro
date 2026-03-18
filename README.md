@@ -224,6 +224,7 @@
    - **RESTful 接口** (`/api.php/v1/...`)：请求头必须携带 `Token: xxx`。
    - **MVC 接口** (`.json` 结尾)：请求头必须携带 `zentaosid: xxx`。
    - **用户地盘读取口径**：跨用户读取必须优先走官方 `user-<type>-<userId>.json` 及其分页变体，不能退化为脚本拼装或纯 REST 列表代替。
+   - **发布前安全检查补充**：如需在本地扩展额外敏感词，请使用未跟踪的 `.security-denylist.json`，不要把真实姓名或账号直接写进仓库。
 3. **项目构建测试**
    - `npm install`
    - `npm run build`

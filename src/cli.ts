@@ -22,7 +22,7 @@ type TeamStore = Record<string, TeamEntry>;
 program
   .name('zentao')
   .description('Zentao CLI Tool for Agent V4 Framework')
-  .version('1.1.1');
+  .version('1.1.2');
 program.on('--help', () => {
   console.log('');
   console.log('Examples:');

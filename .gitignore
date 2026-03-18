@@ -6,3 +6,4 @@ dist/
 *.log
 .agent_dev_rules.md
 test-*.ts
+.security-denylist.json
