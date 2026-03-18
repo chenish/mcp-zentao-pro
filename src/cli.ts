@@ -22,7 +22,7 @@ type TeamStore = Record<string, TeamEntry>;
 program
   .name('zentao')
   .description('Zentao CLI Tool for Agent V4 Framework')
-  .version('1.1.0');
+  .version('1.1.1');
 program.on('--help', () => {
   console.log('');
   console.log('Examples:');
@@ -48,6 +48,35 @@ function getConfig() {
   };
 }
 
+type LoadedConfig = ReturnType<typeof getConfig>;
+
+function writeConfig(conf: LoadedConfig) {
+  ensureConfigDir();
+  const envContent = [
+    `ZENTAO_URL=${conf.url}`,
+    `ZENTAO_TOKEN=${conf.token}`,
+    `ZENTAO_SID=${conf.zentaosid}`,
+    `ZENTAO_ACCOUNT=${conf.account ? Buffer.from(conf.account).toString('base64') : ''}`,
+    `ZENTAO_PASSWORD=${conf.password ? Buffer.from(conf.password).toString('base64') : ''}`,
+  ].join('\n') + '\n';
+  fs.writeFileSync(CONFIG_PATH, envContent, 'utf-8');
+}
+
+function createConfiguredClient(conf: LoadedConfig) {
+  const client = new ZentaoClient(conf.url, conf.token, conf.zentaosid);
+  if (conf.account && conf.password) {
+    client.setCredentials(conf.account, conf.password);
+    client.setAuthRefreshHandler(({ token, zentaosid }) => {
+      writeConfig({
+        ...conf,
+        token,
+        zentaosid,
+      });
+    });
+  }
+  return client;
+}
+
 function ensureConfigDir() {
   fs.mkdirSync(CONFIG_DIR, { recursive: true });
 }
@@ -59,6 +88,14 @@ function normalizeTeamKey(name: string): string {
 function splitMembers(raw?: string): string[] {
   if (!raw) return [];
   return raw.split(',').map((item) => item.trim()).filter(Boolean);
+}
+
+function splitEstimateValues(raw?: string): number[] {
+  if (!raw) return [];
+  return raw
+    .split(',')
+    .map((item) => Number(item.trim()))
+    .filter((item) => Number.isFinite(item) && item > 0);
 }
 
 function readTeamStore(): TeamStore {
@@ -119,16 +156,13 @@ program
       const client = new ZentaoClient(options.url);
       const authRes = await client.login(options.account, options.pwd);
 
-      ensureConfigDir();
-
-      const envContent = [
-        `ZENTAO_URL=${options.url}`,
-        `ZENTAO_TOKEN=${authRes.token}`,
-        `ZENTAO_SID=${authRes.zentaosid}`,
-        `ZENTAO_ACCOUNT=${Buffer.from(options.account).toString('base64')}`,
-        `ZENTAO_PASSWORD=${Buffer.from(options.pwd).toString('base64')}`,
-      ].join('\n') + '\n';
-      fs.writeFileSync(CONFIG_PATH, envContent, 'utf-8');
+      writeConfig({
+        url: options.url,
+        token: authRes.token,
+        zentaosid: authRes.zentaosid,
+        account: options.account,
+        password: options.pwd,
+      });
 
       console.log('✅ Login successful, config saved to:', CONFIG_PATH);
     } catch (error: any) {
@@ -149,8 +183,7 @@ program
     }
     try {
       const conf = getConfig();
-      const client = new ZentaoClient(conf.url, conf.token, conf.zentaosid);
-      if (conf.account && conf.password) client.setCredentials(conf.account, conf.password);
+      const client = createConfiguredClient(conf);
       const output = await client.resolveUrlAndFetch(text);
       console.log('✅ Entity resolved successfully:');
       console.table([output]);
@@ -173,7 +206,7 @@ program
     }
 
     try {
-      const client = new ZentaoClient(conf.url, conf.token, conf.zentaosid);
+      const client = createConfiguredClient(conf);
       let dataType: 'task' | 'story' | 'bug' = 'task';
       if (type === 'stories' || type === 'story') dataType = 'story';
       else if (type === 'bugs' || type === 'bug') dataType = 'bug';
@@ -204,7 +237,7 @@ program
       process.exit(1);
     }
     try {
-      const client = new ZentaoClient(conf.url, conf.token, conf.zentaosid);
+      const client = createConfiguredClient(conf);
       let projects = await client.getProjects();
       console.table(projects.map(p => ({ id: p.id, name: p.name, status: p.status, begin: p.begin, end: p.end })));
     } catch (e: any) {
@@ -224,7 +257,7 @@ program
       process.exit(1);
     }
     try {
-      const client = new ZentaoClient(conf.url, conf.token, conf.zentaosid);
+      const client = createConfiguredClient(conf);
       const projectId = options.projectId ? parseInt(options.projectId, 10) : undefined;
       let executions = await client.getActiveExecutions(projectId);
       if (options.status) executions = executions.filter(e => e.status === options.status);
@@ -254,7 +287,7 @@ program
           console.error('❌ Missing required options: --projectId, --name');
           return;
         }
-        const client = new ZentaoClient(conf.url, conf.token, conf.zentaosid);
+        const client = createConfiguredClient(conf);
 
         // Auto padding missing dates
         const now = new Date();
@@ -287,7 +320,9 @@ program
   .option('--executionName <name>', 'Execution name used when auto-creating the current month execution')
   .option('--storyId <id>', 'Story ID when splitting a story into task')
   .option('--name <name>', 'Task name')
-  .option('--assign <account>', 'Assignee account')
+  .option('--assign <account>', 'Assignee account or comma-separated members for multi-task')
+  .option('--mode <mode>', 'Task collaboration mode when multiple assignees are provided: multi or linear')
+  .option('--team-estimates <hours>', 'Per-member estimates for multi-task, comma-separated (e.g. 2,2,4)')
   .option('--owner <names>', 'Task lookup owners, comma-separated accounts or Chinese names')
   .option('--team-name <name>', 'Saved team name for task lookup scope')
   .option('--taskId <id>', 'Task ID')
@@ -305,6 +340,8 @@ program
     console.log('Examples:');
     console.log('  zentao task create --execId 123 --name "网关排查" --assign zhangsan');
     console.log('  zentao task create --execId 123 --name "网关排查" --assign zhangsan --pri 2 --desc "补充任务描述"');
+    console.log('  zentao task create --execId 123 --name "多人联调排查" --assign "zhangsan,lisi,wangwu" --estimate 6');
+    console.log('  zentao task create --execId 123 --name "多人串行验收" --assign "zhangsan,lisi" --mode linear --team-estimates 3,5');
     console.log('  zentao task create --storyId 12072 --projectId 281 --name "数据库改造脚本适配" --assign zhangsan --estimate 8 --pri 2');
     console.log('  zentao task create --storyId 12072 --projectId 281 --templateExecId 5825 --executionName "黑龙江移动_网优之家_2026年03月" --name "数据库改造脚本适配" --assign zhangsan --desc "从需求拆分的研发任务"');
     console.log('  zentao task find --name "网关排查"');
@@ -317,7 +354,7 @@ program
       process.exit(1);
     }
 
-    const client = new ZentaoClient(conf.url, conf.token, conf.zentaosid);
+    const client = createConfiguredClient(conf);
 
     try {
       if (action === 'create') {
@@ -325,17 +362,18 @@ program
           console.error('❌ Missing required options for task create: --name, --assign');
           return;
         }
+        const assignees = await resolveMemberInputs(client, options.assign);
+        if (assignees.length === 0) {
+          console.error('❌ No valid assignees resolved from --assign.');
+          return;
+        }
 
-        let assignedTo = options.assign;
-        // Robustness: Implicit account mapping for assignee
-        try {
-          const mapping = await client.getUsersMapping();
-          if (mapping[options.assign]) {
-            assignedTo = mapping[options.assign];
-            console.log(`✅ Implicit mapping activated: Assigned "${options.assign}" -> "${assignedTo}"`);
-          }
-        } catch (e) {
-          console.warn('⚠️ Could not fetch user mappings. Treating assignee as raw account name.');
+        const assigneeLabel = await describeTeamMembers(client, assignees);
+        const isMultiTask = assignees.length > 1;
+        const requestedMode = String(options.mode || '').trim().toLowerCase();
+        if (requestedMode && requestedMode !== 'multi' && requestedMode !== 'linear') {
+          console.error('❌ Invalid --mode. Please use "multi" or "linear".');
+          return;
         }
 
         let executionId = options.execId;
@@ -364,12 +402,10 @@ program
         }
 
         const defaultDeadline = new Date(Date.now() + 86400000 * 3).toISOString().split('T')[0];
-        const payload = {
+        const payload: any = {
           name: options.name,
-          assignedTo: assignedTo,
           type: 'devel',
           deadline: options.deadline || defaultDeadline,
-          estimate: options.estimate ? parseFloat(options.estimate) : 2,
           pri: options.pri ? parseInt(options.pri, 10) : 3,
           ...(options.desc ? { desc: options.desc } : {}),
           ...(options.storyId ? { story: parseInt(options.storyId, 10) } : {}),
@@ -377,8 +413,53 @@ program
           // estStarted will be automatically populated inside client.createTask
         };
 
+        if (isMultiTask) {
+          const explicitTeamEstimates = splitEstimateValues(options.teamEstimates);
+          if (options.teamEstimates && explicitTeamEstimates.length !== assignees.length) {
+            console.error(`❌ --team-estimates count (${explicitTeamEstimates.length}) must match assignee count (${assignees.length}).`);
+            return;
+          }
+
+          let teamEstimates: number[];
+          if (explicitTeamEstimates.length > 0) {
+            teamEstimates = explicitTeamEstimates;
+          } else if (options.estimate) {
+            const totalEstimate = parseFloat(options.estimate);
+            const avg = Math.floor((totalEstimate / assignees.length) * 10) / 10;
+            teamEstimates = assignees.map((_, index) => {
+              if (index < assignees.length - 1) return avg;
+              return Number((totalEstimate - avg * (assignees.length - 1)).toFixed(1));
+            });
+          } else {
+            teamEstimates = assignees.map(() => 2);
+          }
+
+          payload.multiple = 1;
+          payload.mode = requestedMode || 'multi';
+          payload.team = assignees;
+          payload.teamEstimate = teamEstimates;
+          payload.estimate = Number(teamEstimates.reduce((sum, item) => sum + item, 0).toFixed(1));
+        } else {
+          payload.assignedTo = assignees[0];
+          payload.estimate = options.estimate ? parseFloat(options.estimate) : 2;
+          if (assignees[0] !== options.assign) {
+            console.log(`✅ Implicit mapping activated: Assigned "${options.assign}" -> "${assignees[0]}"`);
+          }
+        }
+
         const res = await client.createTask(executionId, payload);
-        console.log('✅ Task created successfully. Raw response:', res);
+        console.log('✅ Task created successfully.');
+        console.log(`任务ID：${res.id}`);
+        console.log(`任务名称：${res.name}`);
+        console.log(`执行ID：${res.execution}`);
+        console.log(`任务模式：${res.mode || 'single'}`);
+        console.log(`指派对象：${assigneeLabel}`);
+        if (isMultiTask) {
+          console.log(`成员预估：${(payload.teamEstimate || []).join(', ')}h`);
+          console.log(`总预估：${payload.estimate}h`);
+        } else {
+          console.log(`总预估：${payload.estimate}h`);
+        }
       }
       else if (action === 'effort') {
         if (!options.taskId || !options.consumed) {
@@ -500,7 +581,7 @@ program
       process.exit(1);
     }
 
-    const client = new ZentaoClient(conf.url, conf.token, conf.zentaosid);
+    const client = createConfiguredClient(conf);
 
     try {
       if (action !== 'update') {
@@ -564,7 +645,7 @@ program
       process.exit(1);
     }
 
-    const client = new ZentaoClient(conf.url, conf.token, conf.zentaosid);
+    const client = createConfiguredClient(conf);
 
     try {
       if (action !== 'update') {
@@ -783,8 +864,7 @@ program
           process.exit(1);
         }
 
-        const client = new ZentaoClient(conf.url, conf.token, conf.zentaosid);
-        if (conf.account && conf.password) client.setCredentials(conf.account, conf.password);
+        const client = createConfiguredClient(conf);
         const members = await resolveAssignees(client, options.users);
         saveStoredTeam(options.name, members);
         const memberSummary = await describeTeamMembers(client, members);
@@ -803,8 +883,7 @@ program
 
         let client: ZentaoClient | null = null;
         if (conf.url && conf.token) {
-          client = new ZentaoClient(conf.url, conf.token, conf.zentaosid);
-          if (conf.account && conf.password) client.setCredentials(conf.account, conf.password);
+          client = createConfiguredClient(conf);
         }
 
         const rows = await Promise.all(
@@ -833,8 +912,7 @@ program
 
         let client: ZentaoClient | null = null;
         if (conf.url && conf.token) {
-          client = new ZentaoClient(conf.url, conf.token, conf.zentaosid);
-          if (conf.account && conf.password) client.setCredentials(conf.account, conf.password);
+          client = createConfiguredClient(conf);
         }
 
         console.log(`\n👥 团队：${team.name}`);
@@ -901,8 +979,7 @@ program
     }
 
     try {
-      const client = new ZentaoClient(conf.url, conf.token, conf.zentaosid);
-      if (conf.account && conf.password) client.setCredentials(conf.account, conf.password);
+      const client = createConfiguredClient(conf);
 
       const assignees = await resolveMemberInputs(client, options.users, options.teamName);
       const types = resolveManageTypes(options.type);
@@ -1000,8 +1077,7 @@ program
       process.exit(1);
     }
     try {
-      const client = new ZentaoClient(conf.url, conf.token, conf.zentaosid);
-      if (conf.account && conf.password) client.setCredentials(conf.account, conf.password);
+      const client = createConfiguredClient(conf);
       const assignees = await resolveMemberInputs(client, options.assign, options.teamName);
       const result = await client.getMemberLoad(assignees);
       console.log('\n📊 派发前负荷参考雷达 (Workload Radar)\n');
@@ -1048,8 +1124,7 @@ program
       process.exit(1);
     }
     try {
-      const client = new ZentaoClient(conf.url, conf.token, conf.zentaosid);
-      if (conf.account && conf.password) client.setCredentials(conf.account, conf.password);
+      const client = createConfiguredClient(conf);
       const assignees = await resolveMemberInputs(client, options.assign, options.teamName);
       const result = await client.getStagnantTasks(assignees, parseInt(options.days));
       if (result.length === 0) {
@@ -1089,8 +1164,7 @@ program
       process.exit(1);
     }
     try {
-      const client = new ZentaoClient(conf.url, conf.token, conf.zentaosid);
-      if (conf.account && conf.password) client.setCredentials(conf.account, conf.password);
+      const client = createConfiguredClient(conf);
       const assignees = await resolveMemberInputs(client, options.team, options.teamName);
       const priorityThreshold = Number.parseInt(options.priMax, 10);
       const result = await client.getMorningCheck(
@@ -1158,8 +1232,7 @@ program
     }
 
     try {
-      const client = new ZentaoClient(conf.url, conf.token, conf.zentaosid);
-      if (conf.account && conf.password) client.setCredentials(conf.account, conf.password);
+      const client = createConfiguredClient(conf);
       const assignees = await resolveMemberInputs(client, options.team, options.teamName);
       const weekRange = getWeekWindow();
       const dateFrom = options.dateFrom || weekRange.dateFrom;

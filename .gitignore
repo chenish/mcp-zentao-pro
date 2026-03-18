@@ -4,3 +4,5 @@ dist/
 .env
 .DS_Store
 *.log
+.agent_dev_rules.md
+test-*.ts

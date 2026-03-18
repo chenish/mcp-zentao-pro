@@ -107,6 +107,8 @@
   - `zentao-cli execution create --projectId 577 --name "2026年3月常规迭代" --days 6` (自定义可用工作日)
   - `zentao-cli task create --execId 123 --name "网关排查" --assign "zhangsan"` (瞬时极简派单)
   - `zentao-cli task create --execId 123 --name "网关排查" --assign "zhangsan" --pri 2 --desc "补充任务描述"` (带描述派单：创建时直接写明任务背景与优先级)
+  - `zentao-cli task create --execId 123 --name "多人联调排查" --assign "zhangsan,lisi,wangwu" --estimate 6` (多人并行：多人执行人默认创建为多人并行任务，总预估按成员平均分摊)
+  - `zentao-cli task create --execId 123 --name "多人串行验收" --assign "zhangsan,lisi" --mode linear --team-estimates 3,5` (多人串行：显式指定串行模式与每位成员预估)
   - `zentao-cli task create --execId 123 --name "全量压测" --assign "李四" --estimate 8 --deadline "2026-03-20"` (精细派发：明确指定 8 小时预估工时和特定截止日期)
   - `zentao-cli task create --execId 123 --name "接口联调" --assign "张三" --estimate 4` (中等精度派单：指定预估工时，截止日期走默认值)
   - `zentao-cli task create --storyId 12072 --projectId 281 --name "数据库改造脚本适配" --assign "zhangsan" --estimate 8 --pri 2` (需求拆分：自动检查当月执行，必要时复制上个执行后建任务)
@@ -237,6 +239,10 @@
 ### 1. 登录与环境
 - `zentao-cli login --url "http://127.0.0.1:8080" --account "zhangsan" --pwd "******"`：登录并写入本地配置。
 - `node dist/cli.js login --url "http://127.0.0.1:8080" --account "zhangsan" --pwd "******"`：本地构建后直接验证登录链路。
+- 登录成功后，本地默认写入 `~/.config/zentao/.env`，其中包含 `URL / Token / zentaosid`，以及用于静默重登的账号密码（base64 形式保存）。
+- 后续命令默认优先使用已登录的 `Token + zentaosid`；若鉴权失效，会自动使用本地保存的账号密码重登并重试一次原请求。
+- 静默重登成功后，会把最新的 `Token + zentaosid` 回写到本地配置，避免下一个命令再次先撞一次鉴权失败。
+- 该机制对个人视图、管理视角、晨报、负荷检查、停滞排查、周报等命令统一生效，不需要分别单独处理登录态。
 
 ### 2. 智能查看
 - `zentao-cli view "请看这个任务：http://zentao.local/task-view-123.html"`：从文本中抽取任务链接并解析详情。
@@ -278,6 +284,8 @@
 ### 6. 创建任务
 - `zentao-cli task create --execId 123 --name "网关排查" --assign "zhangsan"`
 - `zentao-cli task create --execId 123 --name "网关排查" --assign "zhangsan" --pri 2 --desc "补充任务描述"`
+- `zentao-cli task create --execId 123 --name "多人联调排查" --assign "zhangsan,lisi,wangwu" --estimate 6`
+- `zentao-cli task create --execId 123 --name "多人串行验收" --assign "zhangsan,lisi" --mode linear --team-estimates 3,5`
 - `zentao-cli task create --execId 123 --name "接口联调" --assign "张三" --estimate 4`
 - `zentao-cli task create --execId 123 --name "全量压测" --assign "李四" --estimate 8 --deadline "2026-03-20"`
 - `zentao-cli task create --storyId 12072 --projectId 281 --name "数据库改造脚本适配" --assign "zhangsan" --estimate 8 --pri 2`

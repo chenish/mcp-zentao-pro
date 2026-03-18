@@ -54,6 +54,7 @@ export class ZentaoClient {
   private usersCache: ZentaoUser[] | null = null;
   private _account: string = '';
   private _password: string = '';  // base64-encoded for safe in-memory storage only
+  private authRefreshHandler?: (auth: { token: string; zentaosid: string }) => void | Promise<void>;
 
   constructor(baseURL: string, token: string = '', zentaosid: string = '') {
     this.baseURL = baseURL;
@@ -87,6 +88,10 @@ export class ZentaoClient {
     this._password = Buffer.from(password).toString('base64');
   }
 
+  setAuthRefreshHandler(handler: (auth: { token: string; zentaosid: string }) => void | Promise<void>) {
+    this.authRefreshHandler = handler;
+  }
+
   private _getCredentials(): { account: string; password: string } | null {
     if (!this._account || !this._password) return null;
     return {
@@ -113,6 +118,9 @@ export class ZentaoClient {
           const authRes = await this.login(creds.account, creds.password);
 
           if (authRes.token && authRes.zentaosid) {
+            if (this.authRefreshHandler) {
+              await this.authRefreshHandler(authRes);
+            }
             // Mark the retry request to avoid infinite loop
             const retryConfig: AxiosRequestConfig & { _isRetry?: boolean } = {
               ...error.config,
@@ -155,7 +163,9 @@ export class ZentaoClient {
 
   async login(account: string, password: string): Promise<{ token: string, zentaosid: string }> {
     // 1. Get REST Token
-    const restRes = await this.rest.post('/api.php/v1/tokens', { account, password });
+    const restRes = await axios.post(`${this.baseURL}/api.php/v1/tokens`, { account, password }, {
+      headers: { 'Content-Type': 'application/json' }
+    });
     if (!restRes.data || !restRes.data.token) {
       throw new Error('REST Login failed, no token received');
     }
@@ -166,7 +176,7 @@ export class ZentaoClient {
     formData.append('account', account);
     formData.append('password', password);
     formData.append('keepLogin', '1');
-    const mvcRes = await this.mvc.post('/api.php?m=user&f=login&t=json', formData.toString(), {
+    const mvcRes = await axios.post(`${this.baseURL}/api.php?m=user&f=login&t=json`, formData.toString(), {
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
     });
 
@@ -325,6 +335,59 @@ export class ZentaoClient {
     return parsedData;
   }
 
+  private isMvcLoginRedirectPayload(payload: any): boolean {
+    const text =
+      typeof payload === 'string'
+        ? payload
+        : typeof payload?.data === 'string'
+          ? payload.data
+          : '';
+
+    const locate =
+      typeof payload?.locate === 'string'
+        ? payload.locate
+        : '';
+
+    return (
+      text.includes('user-login') ||
+      text.includes('m=user&f=login') ||
+      locate.includes('user-login') ||
+      locate.includes('m=user&f=login')
+    );
+  }
+
+  private async getMvcPayloadWithRefresh(url: string): Promise<any> {
+    const res = await this.mvc.get(url);
+    let payload = this.extractMvcPayload(res.data);
+    const isAuthFailure = this.isMvcLoginRedirectPayload(res.data) || this.isMvcLoginRedirectPayload(payload);
+    if (payload && !isAuthFailure) return payload;
+
+    if (!isAuthFailure) {
+      return null;
+    }
+
+    const creds = this._getCredentials();
+    if (!creds) {
+      throw new Error('MVC session expired and no stored credentials are available for silent re-login.');
+    }
+
+    const authRes = await this.login(creds.account, creds.password);
+    if (this.authRefreshHandler) {
+      await this.authRefreshHandler(authRes);
+    }
+
+    const retryRes = await this.mvc.get(url);
+    payload = this.extractMvcPayload(retryRes.data);
+    const retryAuthFailure = this.isMvcLoginRedirectPayload(retryRes.data) || this.isMvcLoginRedirectPayload(payload);
+    if (payload && !retryAuthFailure) return payload;
+
+    if (retryAuthFailure) {
+      throw new Error('MVC session refresh failed; ZenTao still redirected to login.');
+    }
+
+    return null;
+  }
+
   private normalizeLookupKey(value: string): string {
     return String(value || '')
       .trim()
@@ -423,8 +486,7 @@ export class ZentaoClient {
   }
 
   private async getUserRealnameFromMvc(account: string): Promise<string> {
-    const res = await this.mvc.get(`/user-task-${account}.json`);
-    const payload = this.extractMvcPayload(res.data);
+    const payload = await this.getMvcPayloadWithRefresh(`/user-task-${account}.json`);
     return this.inferRealnameFromMvcUserList(payload?.userList, account);
   }
 
@@ -665,8 +727,7 @@ export class ZentaoClient {
       const url = page === 1 && scope === 'assignedTo'
         ? this.buildUserScopeDefaultUrl(type, userId)
         : this.buildUserScopePageUrl(type, userId, scope, recTotal, recPerPage, page);
-      const res = await this.mvc.get(url);
-      const parsedData = this.extractMvcPayload(res.data);
+      const parsedData = await this.getMvcPayloadWithRefresh(url);
       if (!parsedData) break;
 
       const items = this.extractDashboardItems(type, parsedData);
@@ -1054,9 +1115,7 @@ export class ZentaoClient {
     const typeLabel = this.getDashboardTypeLabel(type);
     const url = `/my-${typeLabel}-assignedTo-0-id_desc-0-100-1.json`;
 
-    const res = await this.mvc.get(url);
-
-    const parsedData = this.extractMvcPayload(res.data);
+    const parsedData = await this.getMvcPayloadWithRefresh(url);
 
     if (parsedData) {
       let items = this.extractDashboardItems(type, parsedData);
