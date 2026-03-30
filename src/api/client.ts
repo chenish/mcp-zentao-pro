@@ -388,6 +388,119 @@ export class ZentaoClient {
     return null;
   }
 
+  private isMvcLoginHtml(html: string): boolean {
+    const normalized = String(html || '').toLowerCase();
+    return (
+      (normalized.includes('"currentmodule":"user"') && normalized.includes('"currentmethod":"login"')) ||
+      normalized.includes('/user-login') ||
+      normalized.includes('name=\'account\'') ||
+      normalized.includes('name="account"')
+    );
+  }
+
+  private async getMvcHtmlWithRefresh(url: string): Promise<string> {
+    const requestHtml = async (): Promise<string> => {
+      const response = await this.mvc.get(url, { responseType: 'text' });
+      return typeof response.data === 'string' ? response.data : String(response.data || '');
+    };
+
+    let html = await requestHtml();
+    if (!this.isMvcLoginHtml(html)) {
+      return html;
+    }
+
+    const creds = this._getCredentials();
+    if (!creds) {
+      return html;
+    }
+
+    console.log('[Auth] Token expired or MVC session lost, silently refreshing...');
+    const authRes = await this.login(creds.account, creds.password);
+    if (this.authRefreshHandler) {
+      await this.authRefreshHandler(authRes);
+    }
+
+    html = await requestHtml();
+    return html;
+  }
+
+  private decodeHtmlText(value: any): string {
+    return String(value || '')
+      .replace(/&nbsp;/g, ' ')
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;/g, '\'')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
+  private stripHtmlTags(value: any): string {
+    return this.decodeHtmlText(String(value || '').replace(/<[^>]+>/g, ' '));
+  }
+
+  private summarizeUserField(user: any): string {
+    if (!user) return '';
+    if (typeof user === 'string' || typeof user === 'number') return String(user);
+    const realname = String(user.realname || '').trim();
+    const account = String(user.account || '').trim();
+    if (realname && account) return `${realname} (${account})`;
+    return realname || account || String(user.id || '');
+  }
+
+  private extractTaskViewInsights(html: string): Record<string, any> {
+    if (!html) return {};
+
+    const taskModeMatch = html.match(/<th>任务模式<\/th>\s*<td>([\s\S]*?)<\/td>/);
+    const overallStatusMatch = html.match(/<th>任务状态<\/th>\s*<td>([\s\S]*?)<\/td>/);
+    const taskMode = this.stripHtmlTags(taskModeMatch?.[1] || '');
+    const overallStatusLabel = this.stripHtmlTags(overallStatusMatch?.[1] || '');
+
+    const completionMatches = Array.from(
+      html.matchAll(/(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}), 由 <strong>([^<]+)<\/strong> 完成。/g)
+    );
+    const latestCompletion = completionMatches.length > 0 ? completionMatches[completionMatches.length - 1] : null;
+
+    const teamSectionMatch = html.match(/<div class='tab-pane' id='legendTeam'>([\s\S]*?)<\/table>/);
+    const teamSection = teamSectionMatch?.[1] || '';
+    const teamRowPattern = /<tr class='text-center'>[\s\S]*?<td class='text-left'>(.*?)<\/td>[\s\S]*?<td>(.*?)<\/td>[\s\S]*?<td>(.*?)<\/td>[\s\S]*?<td>(.*?)<\/td>[\s\S]*?<td class="[^"]*">(.*?)<\/td>[\s\S]*?<\/tr>/g;
+    const teamMembers = Array.from(teamSection.matchAll(teamRowPattern)).map((match) => ({
+      member: this.stripHtmlTags(match[1]),
+      estimate: this.stripHtmlTags(match[2]),
+      consumed: this.stripHtmlTags(match[3]),
+      left: this.stripHtmlTags(match[4]),
+      status: this.stripHtmlTags(match[5]),
+    }));
+
+    const teamStatusSummary = teamMembers
+      .map((member) => `${member.member}=${member.status}(预估${member.estimate}, 消耗${member.consumed}, 剩余${member.left})`)
+      .join('; ');
+
+    let closureSummary = '';
+    if (taskMode.includes('多人') && teamMembers.length > 0) {
+      const doneMembers = teamMembers.filter((member) => member.status === '已完成').map((member) => member.member);
+      const pendingMembers = teamMembers.filter((member) => member.status !== '已完成').map((member) => `${member.member}(${member.status})`);
+
+      if (doneMembers.length > 0 && pendingMembers.length > 0) {
+        closureSummary = `${doneMembers.join('、')}已完成个人份额；${pendingMembers.join('、')}尚未完成，因此整体任务当前仍为${overallStatusLabel || '未闭环'}`;
+      } else if (doneMembers.length === teamMembers.length && teamMembers.length > 0) {
+        closureSummary = `团队成员均已完成，整体任务状态为${overallStatusLabel || '已完成'}`;
+      }
+    } else if (latestCompletion && overallStatusLabel && !/已完成|已关闭/.test(overallStatusLabel)) {
+      closureSummary = `${latestCompletion[2]}于${latestCompletion[1]}执行了“完成”动作，但当前整体状态仍为${overallStatusLabel}`;
+    }
+
+    return {
+      taskMode,
+      overallStatusLabel,
+      latestCompletionBy: latestCompletion?.[2] || '',
+      latestCompletionAt: latestCompletion?.[1] || '',
+      teamStatusSummary,
+      closureSummary,
+    };
+  }
+
   private normalizeLookupKey(value: string): string {
     return String(value || '')
       .trim()
@@ -1681,6 +1794,9 @@ export class ZentaoClient {
       if (!res.data) throw new Error(`Failed to fetch ${type} #${id}`);
 
       const item = res.data;
+      const viewInsights = type === 'task'
+        ? this.extractTaskViewInsights(await this.getMvcHtmlWithRefresh(`/${type}-view-${id}.html`))
+        : {};
 
       // Pluck essential fields for Context Window economy
       return {
@@ -1688,12 +1804,22 @@ export class ZentaoClient {
         type: type,
         name: item.name || item.title,
         status: item.status,
+        statusLabel: viewInsights.overallStatusLabel || item.status,
         pri: item.pri,
-        assignedTo: item.assignedTo,
-        openedBy: item.openedBy,
+        assignedTo: this.summarizeUserField(item.assignedTo),
+        openedBy: this.summarizeUserField(item.openedBy),
         estimate: item.estimate,
         consumed: item.consumed,
         deadline: item.deadline,
+        finishedBy: this.summarizeUserField(item.finishedBy),
+        finishedDate: item.finishedDate || '',
+        closedBy: this.summarizeUserField(item.closedBy),
+        closedDate: item.closedDate || '',
+        taskMode: viewInsights.taskMode || '',
+        latestCompletionBy: viewInsights.latestCompletionBy || '',
+        latestCompletionAt: viewInsights.latestCompletionAt || '',
+        teamStatusSummary: viewInsights.teamStatusSummary || '',
+        closureSummary: viewInsights.closureSummary || '',
         desc: item.desc ? item.desc.substring(0, 300) + '...' : '',
         webUrl: `${this.baseURL}/${type}-view-${id}.html`
       };

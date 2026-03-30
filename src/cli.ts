@@ -22,7 +22,7 @@ type TeamStore = Record<string, TeamEntry>;
 program
   .name('zentao')
   .description('Zentao CLI Tool for Agent V4 Framework')
-  .version('1.1.2');
+  .version('1.1.3');
 program.on('--help', () => {
   console.log('');
   console.log('Examples:');
@@ -186,7 +186,21 @@ program
       const client = createConfiguredClient(conf);
       const output = await client.resolveUrlAndFetch(text);
       console.log('✅ Entity resolved successfully:');
-      console.table([output]);
+      console.table([{
+        ID: output.id,
+        类型: output.type,
+        名称: output.name,
+        当前状态: output.statusLabel || output.status,
+        原始状态: output.status,
+        任务模式: output.taskMode || '',
+        指派给: output.assignedTo,
+        截止日期: output.deadline || '',
+        完成时间: output.finishedDate || output.closedDate || '',
+        最近完成动作: output.latestCompletionAt ? `${output.latestCompletionBy} 于 ${output.latestCompletionAt} 完成` : '',
+        闭环判断: output.closureSummary || '',
+        团队状态: output.teamStatusSummary || '',
+        网页链接: output.webUrl,
+      }]);
     } catch (error: any) {
       console.error('❌ Resolve failed:', error.message || error);
     }

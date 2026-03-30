@@ -1,6 +1,6 @@
 {
   "name": "@chenish/zentao-mcp-agent",
-  "version": "1.1.2",
+  "version": "1.1.3",
   "description": "Seamlessly integrate ZenTao with OpenClaw. A powerful MCP server and CLI tool providing intelligent ChatOps capabilities for ZenTao project management.",
   "keywords": [
     "openclaw",
